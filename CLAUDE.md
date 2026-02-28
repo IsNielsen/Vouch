@@ -2,6 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+Be very concise in all your awnsers and plans. Code should be clean and simple.
+
+I am risk at losing my job so be extra rigorous.
 ## Commands
 
 ```bash
