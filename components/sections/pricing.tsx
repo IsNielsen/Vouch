@@ -38,7 +38,7 @@ export function Pricing() {
               </p>
             </div>
             <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
-              <li>✓ Everything in Free</li>
+              <li>✓ Everything in Free tier</li>
               <li>✓ Team management</li>
               <li>✓ Priority support</li>
             </ul>
