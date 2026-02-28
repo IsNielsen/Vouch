@@ -1,8 +1,9 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DocumentUploader } from "@/components/document-uploader";
 
-export default async function UploadPage() {
+async function UploadContent() {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getClaims();
 
@@ -10,6 +11,10 @@ export default async function UploadPage() {
     redirect("/auth/login");
   }
 
+  return <DocumentUploader />;
+}
+
+export default function UploadPage() {
   return (
     <div className="flex-1 w-full flex flex-col gap-8">
       <div>
@@ -18,7 +23,9 @@ export default async function UploadPage() {
           Upload PDF documents to your private storage.
         </p>
       </div>
-      <DocumentUploader />
+      <Suspense>
+        <UploadContent />
+      </Suspense>
     </div>
   );
 }

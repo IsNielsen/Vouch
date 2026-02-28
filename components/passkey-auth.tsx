@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Fingerprint } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export function PasskeyAuth() {
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
@@ -77,6 +78,12 @@ export function PasskeyAuth() {
       {status === "error" && (
         <p className="text-sm text-destructive">{errorMsg}</p>
       )}
+      <Link
+        href="/auth/email-login"
+        className="text-sm text-muted-foreground hover:underline"
+      >
+        Sign in with email instead
+      </Link>
     </div>
   );
 }
