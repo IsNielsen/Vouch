@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { AuthButton } from "./auth-button";
@@ -14,7 +15,7 @@ async function NavLinks() {
   if (!user) return null;
 
   return (
-    <div className="flex items-center gap-4 text-sm font-medium">
+    <div className="flex items-center gap-4 text-lg font-medium">
       <Link href="/protected/upload" className="hover:underline">
         Upload
       </Link>
@@ -28,9 +29,12 @@ async function NavLinks() {
 export function Navbar() {
   return (
     <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
-      <div className="w-full max-w-5xl flex justify-between items-center p-3 px-5 text-sm">
+      <div className="w-full max-w-5xl flex justify-between items-center p-3 px-5 text-xl">
         <div className="flex gap-5 items-center font-semibold">
-          <Link href="/">Vouch</Link>
+          <Link href="/" className="flex items-center gap-2">
+            <Image src="/vouchLogo.png" alt="Vouch logo" width={64} height={64} className="brightness-0 dark:invert" />
+            Vouch
+          </Link>
           <Suspense>
             <NavLinks />
           </Suspense>
