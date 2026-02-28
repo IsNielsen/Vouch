@@ -82,13 +82,13 @@ export function SignButton({ sessionId, pdfUrl, fileName }: { sessionId: string;
         {pdfUrl && (
           <Button variant="outline" onClick={() => downloadBlob(pdfUrl, fileName)}>
             <Download className="h-4 w-4 mr-2" />
-            Download Again
+            Download
           </Button>
         )}
         <div className="w-full max-w-sm border rounded-lg p-4 flex flex-col gap-3">
           {emailSent ? (
             <p className="text-sm text-center text-muted-foreground">
-              A copy has been sent to your inbox.
+              Your email has been saved. It will be sent soon.
             </p>
           ) : (
             <>
@@ -101,7 +101,7 @@ export function SignButton({ sessionId, pdfUrl, fileName }: { sessionId: string;
               />
               <Button disabled={!signerEmail} onClick={handleSendCopy} className="gap-2">
                 <Mail className="h-4 w-4" />
-                Send me a copy
+                Save email
               </Button>
               <button
                 className="text-xs text-muted-foreground hover:underline text-center"
