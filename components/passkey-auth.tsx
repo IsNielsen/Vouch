@@ -8,7 +8,7 @@ import { Fingerprint } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-export function PasskeyAuth() {
+export function PasskeyAuth({ redirectTo = "/protected" }: { redirectTo?: string }) {
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const router = useRouter();
@@ -57,7 +57,7 @@ export function PasskeyAuth() {
 
       if (error) throw error;
 
-      router.push("/protected");
+      router.push(redirectTo);
     } catch (e: any) {
       setStatus("error");
       setErrorMsg(e.message ?? "Something went wrong");
