@@ -64,9 +64,9 @@ async function VerifyContent({
     if (sig.pqc_public_key && sig.pqc_signature && sig.document_hash) {
       try {
         pqcVerified = ml_dsa65.verify(
-          Buffer.from(sig.pqc_public_key, "base64"),
+          Buffer.from(sig.pqc_signature, "base64"),
           Buffer.from(sig.document_hash, "hex"),
-          Buffer.from(sig.pqc_signature, "base64")
+          Buffer.from(sig.pqc_public_key, "base64")
         );
       } catch {
         pqcVerified = false;
