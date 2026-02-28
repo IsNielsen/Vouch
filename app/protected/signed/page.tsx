@@ -1,22 +1,22 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { DownloadButton } from "./download-button";
 import { FileText } from "lucide-react";
 
 type SignatureRow = {
   session_id: string;
   signed_at: string;
-  document_sessions: { file_name: string; file_path: string } | null;
+  document_sessions: { file_name: string } | null;
 };
 
 type SentDocRow = {
   id: string;
   file_name: string;
-  file_path: string;
   created_at: string;
   status: string;
+  multi_signer: boolean;
   signatures: { id: string; signer_id: string; signed_at: string }[];
 };
 
@@ -31,12 +31,12 @@ async function SignedDocuments() {
   const [{ data: signatures }, { data: sentSessions }] = await Promise.all([
     admin
       .from("signatures")
-      .select("session_id, signed_at, document_sessions (file_name, file_path)")
+      .select("session_id, signed_at, document_sessions (file_name)")
       .eq("signer_id", userId)
       .order("signed_at", { ascending: false }),
     admin
       .from("document_sessions")
-      .select("id, file_name, file_path, created_at, status, signatures (id, signer_id, signed_at)")
+      .select("id, file_name, created_at, status, multi_signer, signatures (id, signer_id, signed_at)")
       .eq("owner_id", userId)
       .order("created_at", { ascending: false }),
   ]);
@@ -54,29 +54,20 @@ async function SignedDocuments() {
     })
   );
 
-  // Build signed URLs in parallel
-  const [signedDocs, sentDocs] = await Promise.all([
-    Promise.all(
-      signatureRows.map(async (sig) => {
-        const ds = sig.document_sessions;
-        if (!ds) return null;
-        const { data: signed } = await admin.storage.from("documents").createSignedUrl(ds.file_path, 3600);
-        return { sessionId: sig.session_id, fileName: ds.file_name, signedAt: sig.signed_at, pdfUrl: signed?.signedUrl ?? null };
-      })
-    ),
-    Promise.all(
-      sentRows.map(async (doc) => {
-        const { data: signed } = await admin.storage.from("documents").createSignedUrl(doc.file_path, 3600);
-        return {
-          id: doc.id,
-          fileName: doc.file_name,
-          createdAt: doc.created_at,
-          pdfUrl: signed?.signedUrl ?? null,
-          signers: doc.signatures.map((s) => ({ email: signerEmails[s.signer_id] ?? s.signer_id, signedAt: s.signed_at })),
-        };
-      })
-    ),
-  ]);
+  const signedDocs = signatureRows.map((sig) => {
+    const ds = sig.document_sessions;
+    if (!ds) return null;
+    return { sessionId: sig.session_id, fileName: ds.file_name, signedAt: sig.signed_at };
+  });
+
+  const sentDocs = sentRows.map((doc) => ({
+    id: doc.id,
+    fileName: doc.file_name,
+    createdAt: doc.created_at,
+    isSigned: doc.status === "signed",
+    multiSigner: doc.multi_signer,
+    signers: doc.signatures.map((s) => ({ email: signerEmails[s.signer_id] ?? s.signer_id, signedAt: s.signed_at })),
+  }));
 
   return (
     <div className="flex flex-col gap-12">
@@ -94,7 +85,8 @@ async function SignedDocuments() {
         ) : (
           <div className="flex flex-col gap-3">
             {sentDocs.map((doc) => (
-              <div key={doc.id} className="border rounded-lg p-4 flex flex-col gap-3">
+              <div key={doc.id} className="relative border rounded-lg p-4 flex flex-col gap-3 hover:bg-accent/50 transition-colors cursor-pointer">
+                <Link href={`/protected/signed/${doc.id}`} className="absolute inset-0 rounded-lg" aria-label={doc.fileName} />
                 <div className="flex items-center justify-between">
                   <div className="min-w-0">
                     <p className="font-medium truncate">{doc.fileName}</p>
@@ -102,7 +94,6 @@ async function SignedDocuments() {
                       {new Date(doc.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
                     </p>
                   </div>
-                  {doc.pdfUrl && <DownloadButton url={doc.pdfUrl} fileName={doc.fileName} />}
                 </div>
                 {doc.signers.length > 0 ? (
                   <div className="flex flex-col gap-1 border-t pt-3">
@@ -140,15 +131,18 @@ async function SignedDocuments() {
           <div className="flex flex-col gap-3">
             {signedDocs.map((doc) =>
               doc ? (
-                <div key={doc.sessionId} className="flex items-center justify-between border rounded-lg p-4">
+                <Link
+                  key={doc.sessionId}
+                  href={`/protected/signed/${doc.sessionId}`}
+                  className="flex items-center justify-between border rounded-lg p-4 hover:bg-accent/50 transition-colors"
+                >
                   <div className="min-w-0">
                     <p className="font-medium truncate">{doc.fileName}</p>
                     <p className="text-sm text-muted-foreground">
                       {new Date(doc.signedAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
                     </p>
                   </div>
-                  {doc.pdfUrl && <DownloadButton url={doc.pdfUrl} fileName={doc.fileName} />}
-                </div>
+                </Link>
               ) : null
             )}
           </div>
@@ -163,7 +157,7 @@ export default function SignedPage() {
     <div className="flex-1 w-full flex flex-col gap-8">
       <div>
         <h1 className="font-bold text-2xl">Documents</h1>
-        <p className="text-muted-foreground mt-1 text-sm">Track documents you've sent and signed.</p>
+        <p className="text-muted-foreground mt-1 text-sm">Track documents you&apos;ve sent and signed.</p>
       </div>
       <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
         <SignedDocuments />
