@@ -75,28 +75,35 @@ export async function POST(
     })
     .eq("id", passkey.id);
 
-  const hmacKey = await crypto.subtle.importKey(
-    "raw",
-    Buffer.from(process.env.SUPABASE_SERVICE_ROLE_KEY!),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-  const seedBuffer = await crypto.subtle.sign(
-    "HMAC",
-    hmacKey,
-    Buffer.from("pqc-v1:" + passkey.id)
-  );
-  const seed = new Uint8Array(seedBuffer).slice(0, 32);
+  let pqcSignature: string;
+  let pqcPublicKey: string;
+  try {
+    const hmacKey = await crypto.subtle.importKey(
+      "raw",
+      Buffer.from(process.env.SUPABASE_SERVICE_ROLE_KEY!),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    const seedBuffer = await crypto.subtle.sign(
+      "HMAC",
+      hmacKey,
+      Buffer.from("pqc-v1:" + passkey.id)
+    );
+    const seed = new Uint8Array(seedBuffer).slice(0, 32);
 
-  const { secretKey, publicKey } = ml_dsa65.keygen(seed);
-  const hashBytes = Buffer.from(documentHash, "hex");
-  const pqcSig = ml_dsa65.sign(secretKey, hashBytes);
+    const { secretKey, publicKey } = ml_dsa65.keygen(seed);
+    const hashBytes = Buffer.from(documentHash, "hex");
+    const pqcSig = ml_dsa65.sign(secretKey, hashBytes);
 
-  const pqcSignature = Buffer.from(pqcSig).toString("base64");
-  const pqcPublicKey = Buffer.from(publicKey).toString("base64");
+    pqcSignature = Buffer.from(pqcSig).toString("base64");
+    pqcPublicKey = Buffer.from(publicKey).toString("base64");
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "PQC signing error";
+    return Response.json({ error: msg }, { status: 500 });
+  }
 
-  await admin.from("signatures").insert({
+  const { error: insertError } = await admin.from("signatures").insert({
     session_id: sessionId,
     signer_id: userId,
     document_hash: documentHash,
@@ -105,6 +112,8 @@ export async function POST(
     pqc_signature: pqcSignature,
     pqc_public_key: pqcPublicKey,
   });
+
+  if (insertError) return Response.json({ error: insertError.message }, { status: 500 });
 
   await admin
     .from("document_sessions")
