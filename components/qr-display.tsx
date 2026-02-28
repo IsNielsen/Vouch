@@ -10,6 +10,8 @@ interface QRDisplayProps {
   sessionId: string;
   fileName: string;
   pdfUrl: string | null;
+  multiSigner: boolean;
+  initialSignatureCount: number;
 }
 
 async function downloadBlob(url: string, fileName: string) {
@@ -22,10 +24,12 @@ async function downloadBlob(url: string, fileName: string) {
   URL.revokeObjectURL(blobUrl);
 }
 
-export function QRDisplay({ sessionId, fileName, pdfUrl }: QRDisplayProps) {
+export function QRDisplay({ sessionId, fileName, pdfUrl, multiSigner, initialSignatureCount }: QRDisplayProps) {
   const [signUrl, setSignUrl] = useState("");
   const [copied, setCopied] = useState(false);
   const [signed, setSigned] = useState(false);
+  const [signatureCount, setSignatureCount] = useState(initialSignatureCount);
+  const [closing, setClosing] = useState(false);
 
   useEffect(() => {
     setSignUrl(`${window.location.origin}/sign/${sessionId}`);
@@ -33,7 +37,9 @@ export function QRDisplay({ sessionId, fileName, pdfUrl }: QRDisplayProps) {
 
   useEffect(() => {
     const supabase = createClient();
-    const channel = supabase
+
+    // Always subscribe to session status updates
+    const sessionChannel = supabase
       .channel(`session-${sessionId}`)
       .on(
         "postgres_changes",
@@ -49,12 +55,43 @@ export function QRDisplay({ sessionId, fileName, pdfUrl }: QRDisplayProps) {
       )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
-  }, [sessionId]);
+    if (!multiSigner) {
+      return () => { supabase.removeChannel(sessionChannel); };
+    }
+
+    // Multi-signer: also subscribe to new signatures
+    const sigChannel = supabase
+      .channel(`signatures-${sessionId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "signatures",
+          filter: `session_id=eq.${sessionId}`,
+        },
+        () => {
+          setSignatureCount((c) => c + 1);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(sessionChannel);
+      supabase.removeChannel(sigChannel);
+    };
+  }, [sessionId, multiSigner]);
 
   useEffect(() => {
-    if (signed && pdfUrl) downloadBlob(pdfUrl, fileName);
-  }, [signed, pdfUrl, fileName]);
+    if (signed && !multiSigner && pdfUrl) downloadBlob(pdfUrl, fileName);
+  }, [signed, multiSigner, pdfUrl, fileName]);
+
+  async function closeSigning() {
+    setClosing(true);
+    const res = await fetch(`/api/sessions/${sessionId}/close`, { method: "POST" });
+    if (!res.ok) setClosing(false);
+    // setSigned will be triggered by the realtime subscription
+  }
 
   async function copyUrl() {
     await navigator.clipboard.writeText(signUrl);
@@ -68,12 +105,14 @@ export function QRDisplay({ sessionId, fileName, pdfUrl }: QRDisplayProps) {
         <CheckCircle className="h-20 w-20 text-green-500" />
         <h2 className="text-2xl font-semibold">Document Signed</h2>
         <p className="text-muted-foreground text-sm">
-          The signer has successfully verified their identity and signed the document.
+          {multiSigner
+            ? `${signatureCount} signer${signatureCount !== 1 ? "s" : ""} verified their identity and signed the document.`
+            : "The signer has successfully verified their identity and signed the document."}
         </p>
         {pdfUrl && (
           <Button onClick={() => downloadBlob(pdfUrl, fileName)}>
             <Download className="h-4 w-4 mr-2" />
-            Download Again
+            Download
           </Button>
         )}
       </div>
@@ -95,30 +134,41 @@ export function QRDisplay({ sessionId, fileName, pdfUrl }: QRDisplayProps) {
         </div>
       )}
       <div className="flex flex-col items-center gap-6 max-w-sm mx-auto w-full">
-      <div className="text-center">
-        <p className="text-sm text-muted-foreground">Document</p>
-        <p className="font-medium truncate max-w-xs">{fileName}</p>
-        <p className="text-xs text-muted-foreground mt-1 font-mono">
-          {sessionId.slice(0, 8)}…
-        </p>
-      </div>
-
-      {signUrl && (
-        <div className="rounded-xl border bg-white p-4">
-          <QRCodeSVG value={signUrl} size={220} />
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">Document</p>
+          <p className="font-medium truncate max-w-xs">{fileName}</p>
+          <p className="text-xs text-muted-foreground mt-1 font-mono">
+            {sessionId.slice(0, 8)}…
+          </p>
+          {multiSigner && (
+            <p className="text-sm font-medium mt-2">
+              Signatures collected: {signatureCount}
+            </p>
+          )}
         </div>
-      )}
 
-      <div className="flex items-center gap-2 w-full">
-        <p className="text-xs text-muted-foreground truncate flex-1 font-mono">{signUrl}</p>
-        <Button variant="outline" size="icon" onClick={copyUrl} className="shrink-0">
-          {copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
-        </Button>
-      </div>
+        {signUrl && (
+          <div className="rounded-xl border bg-white p-4">
+            <QRCodeSVG value={signUrl} size={220} />
+          </div>
+        )}
 
-      <p className="text-sm text-muted-foreground text-center">
-        Share this QR code or link with the signer.
-      </p>
+        <div className="flex items-center gap-2 w-full">
+          <p className="text-xs text-muted-foreground truncate flex-1 font-mono">{signUrl}</p>
+          <Button variant="outline" size="icon" onClick={copyUrl} className="shrink-0">
+            {copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
+          </Button>
+        </div>
+
+        <p className="text-sm text-muted-foreground text-center">
+          Share this QR code or link with the signer{multiSigner ? "s" : ""}.
+        </p>
+
+        {multiSigner && (
+          <Button variant="destructive" onClick={closeSigning} disabled={closing} className="w-full">
+            {closing ? "Closing…" : "Close Signing"}
+          </Button>
+        )}
       </div>
     </div>
   );

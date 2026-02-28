@@ -17,22 +17,25 @@ async function SessionContent({
 
   const { data: session } = await supabase
     .from("document_sessions")
-    .select("id, file_name, file_path")
+    .select("id, file_name, file_path, multi_signer")
     .eq("id", sessionId)
     .single();
 
   if (!session) notFound();
 
   const admin = createAdminClient();
-  const { data: signed } = await admin.storage
-    .from("documents")
-    .createSignedUrl(session.file_path, 3600);
+  const [{ data: signed }, { count: signatureCount }] = await Promise.all([
+    admin.storage.from("documents").createSignedUrl(session.file_path, 3600),
+    admin.from("signatures").select("id", { count: "exact", head: true }).eq("session_id", sessionId),
+  ]);
 
   return (
     <QRDisplay
       sessionId={session.id}
       fileName={session.file_name}
       pdfUrl={signed?.signedUrl ?? null}
+      multiSigner={session.multi_signer}
+      initialSignatureCount={signatureCount ?? 0}
     />
   );
 }

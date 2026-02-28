@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Be very concise in all your awnsers and plans. Code should be clean and simple.
+Be very concise in all your answers and plans. Code should be clean and simple.
 
 I am risk at losing my job so be extra rigorous.
 ## Commands
@@ -21,33 +21,60 @@ Copy `.env.local` and set:
 ```
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...           # Server-only, never expose to client
+NEXT_PUBLIC_WEBAUTHN_RP_NAME=...        # Optional, defaults to "Vouch"
 ```
 
-Both are exposed to the browser. The `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` accepts either the new publishable key format (`sb_publishable_...`) or the legacy anon key.
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` accepts either `sb_publishable_...` or the legacy anon key format.
 
 ## Architecture
 
-This is a **Next.js 15 App Router** app with **Supabase** for auth and database, styled with **Tailwind CSS** and **shadcn/ui** (new-york style, neutral base color).
+**Next.js 15 App Router** + **Supabase** (cookie-based auth via `@supabase/ssr`), styled with **Tailwind CSS** and **shadcn/ui** (new-york style, neutral base color).
 
-### Auth Flow
+### Auth Flow (WebAuthn Passkey)
 
-Authentication uses cookie-based sessions via `@supabase/ssr`:
+1. User visits `/auth/login` → `<PasskeyAuth>` tries authentication, falls back to registration
+2. API routes under `/api/passkey/{register,authenticate}/{start,complete}` handle challenges stored in httpOnly cookies
+3. On success, server generates a magic link via `admin.auth.admin.generateLink({ type: "magiclink" })` and returns `token_hash` for `verifyOtp()` → sets Supabase session cookie
 
-- **`proxy.ts`** (root) — Next.js middleware that calls `lib/supabase/proxy.ts:updateSession()` on every request to refresh the session cookie. Redirects unauthenticated users to `/auth/login` for any route except `/`, `/login`, and `/auth/*`.
-- **`lib/supabase/server.ts`** — Server-side Supabase client (async, reads/writes cookies). Create a new instance per function call — never store in a global.
-- **`lib/supabase/client.ts`** — Browser-side Supabase client for Client Components.
-- Auth pages live under `app/auth/` (login, sign-up, forgot-password, update-password, confirm, error, sign-up-success).
-- Use `supabase.auth.getClaims()` (fast, JWT-based) instead of `supabase.auth.getUser()` (slower, network call) when you only need claims.
+Key files:
+- `proxy.ts` (root) — middleware entry; calls `lib/supabase/proxy.ts:updateSession()` to refresh session cookies. Redirects unauthenticated users to `/auth/login` except `/`, `/login`, `/auth/*`, `/api`, `/sign/*`
+- `lib/supabase/server.ts` — server-side client (create new instance per call, never store globally)
+- `lib/supabase/client.ts` — browser-side client for Client Components
+- `lib/supabase/admin.ts` — service-role client, server-only
+- `lib/webauthn/rp.ts` — derives `rpID` + `origin` from request headers
+- `components/passkey-auth.tsx` — auth UI
+
+WebAuthn security: `residentKey: "required"`, `userVerification: "required"`, counter check on auth to detect cloned authenticators.
+
+Use `supabase.auth.getClaims()` (fast, JWT-based) instead of `supabase.auth.getUser()` (slow, network call) when you only need auth claims.
+
+### Document Signing Flow
+
+1. **Upload** — `app/protected/upload/page.tsx` → `<DocumentUploader>` uploads PDF to Supabase Storage, creates a signing session in DB, redirects to QR page
+2. **Share** — `app/protected/upload/[sessionId]/page.tsx` → `<QRDisplay>` shows QR code + realtime subscription for status updates
+3. **Sign** — `app/sign/[sessionId]/page.tsx` (public, no auth required) → signer authenticates with passkey via `<SignButton>`
+4. **Signature** — `/api/sign/[sessionId]/complete/route.ts`:
+   - Verifies WebAuthn response
+   - Derives ML-DSA key from `HMAC(service_role_key, "pqc-v1:" + credential_id)` — post-quantum cryptography via `@noble/post-quantum`
+   - Signs SHA-256 document hash; stores `document_hash`, `pqc_signature`, `pqc_public_key`, `authenticator_data`, `ip_address`
+   - Updates session status to `"signed"`, logs `signature_applied` event
 
 ### Route Structure
 
-- `/` — Public landing/home page
-- `/auth/*` — Auth pages (public)
-- `/protected` — Example auth-gated page with its own layout (`app/protected/layout.tsx`)
+- `/` — Public landing page with sections (hero, features, pricing, FAQ, etc.)
+- `/auth/*` — Auth pages (login, sign-up redirects to login, email-login fallback, forgot-password, etc.)
+- `/protected/*` — Auth-gated: upload, QR display, signed documents list
+- `/sign/[sessionId]` — Public signing page
+- `/early-access` — Waitlist page
+- `/api/passkey/*` — WebAuthn registration/authentication
+- `/api/sign/[sessionId]/*` — Signing challenge, completion, events, send-copy
 
 ### Key Patterns
 
-- **`lib/utils.ts`** exports `cn()` (clsx + tailwind-merge) and `hasEnvVars` (guards against missing env vars during setup).
-- shadcn/ui components live in `components/ui/`. Add new ones with `npx shadcn@latest add <component>`.
-- The `@/` path alias maps to the project root.
-- Vercel Speed Insights and Analytics are included in `app/layout.tsx`.
+- `lib/utils.ts` exports `cn()` (clsx + tailwind-merge) and `hasEnvVars`
+- shadcn/ui components in `components/ui/`. Add with `npx shadcn@latest add <component>`
+- Landing page sections live in `components/sections/`
+- `@/` path alias maps to project root
+- Vercel Speed Insights and Analytics in `app/layout.tsx`
+- DB table `signature_stats.total_signatures` powers the live signature counter on the landing page

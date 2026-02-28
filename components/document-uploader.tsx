@@ -10,6 +10,7 @@ type Status = "idle" | "dragging" | "uploading" | "success" | "error";
 export function DocumentUploader() {
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
+  const [multiSigner, setMultiSigner] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
   const router = useRouter();
@@ -43,7 +44,7 @@ export function DocumentUploader() {
 
     const { data: session, error: sessionError } = await supabase
       .from("document_sessions")
-      .insert({ owner_id: userId, file_path: path, file_name: file.name })
+      .insert({ owner_id: userId, file_path: path, file_name: file.name, multi_signer: multiSigner })
       .select("id")
       .single();
 
@@ -83,6 +84,32 @@ export function DocumentUploader() {
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => setMultiSigner(false)}
+          className={[
+            "flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-colors",
+            !multiSigner
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-muted-foreground/25 hover:bg-accent/50",
+          ].join(" ")}
+        >
+          Single signer
+        </button>
+        <button
+          type="button"
+          onClick={() => setMultiSigner(true)}
+          className={[
+            "flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-colors",
+            multiSigner
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-muted-foreground/25 hover:bg-accent/50",
+          ].join(" ")}
+        >
+          Multiple signers
+        </button>
+      </div>
       <div
         onDrop={onDrop}
         onDragOver={onDragOver}

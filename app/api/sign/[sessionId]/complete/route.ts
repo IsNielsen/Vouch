@@ -109,6 +109,16 @@ export async function POST(
     return Response.json({ error: msg }, { status: 500 });
   }
 
+  // Check for duplicate signature
+  const { data: existing } = await admin
+    .from("signatures")
+    .select("id")
+    .eq("session_id", sessionId)
+    .eq("signer_id", userId)
+    .maybeSingle();
+
+  if (existing) return Response.json({ error: "Already signed" }, { status: 409 });
+
   const { error: insertError } = await admin.from("signatures").insert({
     session_id: sessionId,
     signer_id: userId,
@@ -123,10 +133,18 @@ export async function POST(
 
   if (insertError) return Response.json({ error: insertError.message }, { status: 500 });
 
-  await admin
+  const { data: docSession } = await admin
     .from("document_sessions")
-    .update({ status: "signed" })
-    .eq("id", sessionId);
+    .select("multi_signer")
+    .eq("id", sessionId)
+    .single();
+
+  if (!docSession?.multi_signer) {
+    await admin
+      .from("document_sessions")
+      .update({ status: "signed" })
+      .eq("id", sessionId);
+  }
 
   // Log signature_applied event
   await admin.from("signing_events").insert({
