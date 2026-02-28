@@ -1,3 +1,4 @@
+import { ml_dsa65 } from "@noble/post-quantum/ml-dsa.js";
 import { verifyAuthenticationResponse } from "@simplewebauthn/server";
 import { isoBase64URL } from "@simplewebauthn/server/helpers";
 import { cookies } from "next/headers";
@@ -69,12 +70,35 @@ export async function POST(
     })
     .eq("id", passkey.id);
 
+  const hmacKey = await crypto.subtle.importKey(
+    "raw",
+    Buffer.from(process.env.SUPABASE_SERVICE_ROLE_KEY!),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const seedBuffer = await crypto.subtle.sign(
+    "HMAC",
+    hmacKey,
+    Buffer.from("pqc-v1:" + passkey.id)
+  );
+  const seed = new Uint8Array(seedBuffer).slice(0, 32);
+
+  const { secretKey, publicKey } = ml_dsa65.keygen(seed);
+  const hashBytes = Buffer.from(documentHash, "hex");
+  const pqcSig = ml_dsa65.sign(secretKey, hashBytes);
+
+  const pqcSignature = Buffer.from(pqcSig).toString("base64");
+  const pqcPublicKey = Buffer.from(publicKey).toString("base64");
+
   await admin.from("signatures").insert({
     session_id: sessionId,
     signer_id: userId,
     document_hash: documentHash,
     credential_id: passkey.id,
     authenticator_data: body.response.authenticatorData as string,
+    pqc_signature: pqcSignature,
+    pqc_public_key: pqcPublicKey,
   });
 
   await admin
