@@ -83,8 +83,8 @@ export function QRDisplay({ sessionId, fileName, pdfUrl, multiSigner, initialSig
   }, [sessionId, multiSigner]);
 
   useEffect(() => {
-    if (signed && !multiSigner && pdfUrl) downloadBlob(pdfUrl, fileName);
-  }, [signed, multiSigner, pdfUrl, fileName]);
+    if (signed && !multiSigner) downloadBlob(`/api/sign/${sessionId}/download`, fileName);
+  }, [signed, multiSigner, sessionId, fileName]);
 
   async function closeSigning() {
     setClosing(true);
@@ -109,12 +109,10 @@ export function QRDisplay({ sessionId, fileName, pdfUrl, multiSigner, initialSig
             ? `${signatureCount} signer${signatureCount !== 1 ? "s" : ""} verified their identity and signed the document.`
             : "The signer has successfully verified their identity and signed the document."}
         </p>
-        {pdfUrl && (
-          <Button onClick={() => downloadBlob(pdfUrl, fileName)}>
-            <Download className="h-4 w-4 mr-2" />
-            Download
-          </Button>
-        )}
+        <Button onClick={() => downloadBlob(`/api/sign/${sessionId}/download`, fileName)}>
+          <Download className="h-4 w-4 mr-2" />
+          Download
+        </Button>
       </div>
     );
   }

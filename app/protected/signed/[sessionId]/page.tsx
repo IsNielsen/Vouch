@@ -155,9 +155,7 @@ async function DocumentDetail({ params }: { params: Promise<{ sessionId: string 
           )}
 
           {/* Download */}
-          {pdfUrl && (
-            <DownloadButton url={pdfUrl} fileName={session.file_name} />
-          )}
+          <DownloadButton url={`/api/sign/${sessionId}/download`} fileName={session.file_name} />
         </div>
       </div>
     </div>
