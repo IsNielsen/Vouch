@@ -363,7 +363,7 @@ export default function Home() {
           </div>
         </div>
         <div className="max-w-5xl mx-auto mt-10 pt-6 border-t border-border text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} Vouch. All rights reserved.
+          © 2026 Vouch. All rights reserved.
         </div>
       </footer>
     </div>
