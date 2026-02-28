@@ -59,7 +59,7 @@ async function SignContent({
         )}
       </div>
       <div className="p-4 border-t bg-background">
-        <SignButton sessionId={session.id} />
+        <SignButton sessionId={session.id} pdfUrl={pdfUrl} fileName={session.file_name} />
       </div>
     </div>
   );

@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { startAuthentication } from "@simplewebauthn/browser";
 import { Button } from "@/components/ui/button";
-import { PenLine, CheckCircle, Loader2 } from "lucide-react";
+import { PenLine, CheckCircle, Loader2, Download } from "lucide-react";
 
 type State = "idle" | "loading" | "signed" | "error";
 
-export function SignButton({ sessionId }: { sessionId: string }) {
+export function SignButton({ sessionId, pdfUrl, fileName }: { sessionId: string; pdfUrl: string | null; fileName: string }) {
   const [state, setState] = useState<State>("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -53,6 +53,14 @@ export function SignButton({ sessionId }: { sessionId: string }) {
         <CheckCircle className="h-20 w-20 text-green-500" />
         <h2 className="text-2xl font-semibold">Identity Verified</h2>
         <p className="text-muted-foreground text-sm">Document signed successfully.</p>
+        {pdfUrl && (
+          <Button asChild>
+            <a href={pdfUrl} download={fileName}>
+              <Download className="h-4 w-4 mr-2" />
+              Download Document
+            </a>
+          </Button>
+        )}
       </div>
     );
   }

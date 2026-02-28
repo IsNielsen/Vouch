@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { CopyIcon, CheckIcon } from "lucide-react";
+import { CopyIcon, CheckIcon, CheckCircle, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
-import { CheckCircle } from "lucide-react";
 
 interface QRDisplayProps {
   sessionId: string;
@@ -57,6 +56,14 @@ export function QRDisplay({ sessionId, fileName, pdfUrl }: QRDisplayProps) {
         <p className="text-muted-foreground text-sm">
           The signer has successfully verified their identity and signed the document.
         </p>
+        {pdfUrl && (
+          <Button asChild>
+            <a href={pdfUrl} download={fileName}>
+              <Download className="h-4 w-4 mr-2" />
+              Download Document
+            </a>
+          </Button>
+        )}
       </div>
     );
   }
