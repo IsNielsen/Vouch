@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { CopyIcon, CheckIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/client";
+import { CheckCircle } from "lucide-react";
 
 interface QRDisplayProps {
   sessionId: string;
@@ -14,15 +16,49 @@ interface QRDisplayProps {
 export function QRDisplay({ sessionId, fileName, pdfUrl }: QRDisplayProps) {
   const [signUrl, setSignUrl] = useState("");
   const [copied, setCopied] = useState(false);
+  const [signed, setSigned] = useState(false);
 
   useEffect(() => {
     setSignUrl(`${window.location.origin}/sign/${sessionId}`);
+  }, [sessionId]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`session-${sessionId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "document_sessions",
+          filter: `id=eq.${sessionId}`,
+        },
+        (payload) => {
+          if (payload.new.status === "signed") setSigned(true);
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [sessionId]);
 
   async function copyUrl() {
     await navigator.clipboard.writeText(signUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  if (signed) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-24">
+        <CheckCircle className="h-20 w-20 text-green-500" />
+        <h2 className="text-2xl font-semibold">Document Signed</h2>
+        <p className="text-muted-foreground text-sm">
+          The signer has successfully verified their identity and signed the document.
+        </p>
+      </div>
+    );
   }
 
   return (
