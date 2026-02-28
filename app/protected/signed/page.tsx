@@ -7,7 +7,7 @@ import { FileText } from "lucide-react";
 
 type SignatureRow = {
   session_id: string;
-  created_at: string;
+  signed_at: string;
   document_sessions: { file_name: string; file_path: string } | null;
 };
 
@@ -20,9 +20,9 @@ async function SignedDocuments() {
 
   const { data: signatures } = await admin
     .from("signatures")
-    .select("session_id, created_at, document_sessions (file_name, file_path)")
+    .select("session_id, signed_at, document_sessions (file_name, file_path)")
     .eq("signer_id", data.claims.sub)
-    .order("created_at", { ascending: false });
+    .order("signed_at", { ascending: false });
 
   const rows = (signatures ?? []) as unknown as SignatureRow[];
 
@@ -45,7 +45,7 @@ async function SignedDocuments() {
       return {
         sessionId: sig.session_id,
         fileName: ds.file_name,
-        signedAt: sig.created_at,
+        signedAt: sig.signed_at,
         pdfUrl: signed?.signedUrl ?? null,
       };
     })
