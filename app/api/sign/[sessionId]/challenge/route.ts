@@ -19,7 +19,7 @@ export async function POST(
 
   const { data: session } = await admin
     .from("document_sessions")
-    .select("file_path, status")
+    .select("file_path, file_name, status")
     .eq("id", sessionId)
     .single();
 
@@ -47,10 +47,30 @@ export async function POST(
     return Response.json({ error: msg }, { status: 500 });
   }
 
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
+    req.headers.get("x-real-ip") ??
+    null;
+
+  // Log consent_granted event
+  await admin.from("signing_events").insert({
+    session_id: sessionId,
+    signer_id: userId,
+    event_type: "consent_granted",
+    ip_address: ip,
+  });
+
   const cookieStore = await cookies();
   cookieStore.set(
     `sign_challenge_${sessionId}`,
-    JSON.stringify({ challenge: options.challenge, documentHash, userId }),
+    JSON.stringify({
+      challenge: options.challenge,
+      documentHash,
+      userId,
+      fileName: session.file_name,
+      filePath: session.file_path,
+      ip,
+    }),
     { httpOnly: true, sameSite: "strict", path: "/", maxAge: 300 }
   );
 

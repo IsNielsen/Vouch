@@ -17,13 +17,19 @@ export async function POST(
   if (!raw) return Response.json({ error: "No challenge" }, { status: 400 });
   cookieStore.delete(`sign_challenge_${sessionId}`);
 
-  const { challenge, documentHash, userId } = JSON.parse(raw);
+  const { challenge, documentHash, userId, fileName, filePath, ip: cookieIp } = JSON.parse(raw);
 
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   if (!data?.claims || data.claims.sub !== userId) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
+    req.headers.get("x-real-ip") ??
+    cookieIp ??
+    null;
 
   let body;
   try {
@@ -111,6 +117,8 @@ export async function POST(
     authenticator_data: body.response.authenticatorData as string,
     pqc_signature: pqcSignature,
     pqc_public_key: pqcPublicKey,
+    ip_address: ip,
+    auth_method: "webauthn-passkey",
   });
 
   if (insertError) return Response.json({ error: insertError.message }, { status: 500 });
@@ -119,6 +127,15 @@ export async function POST(
     .from("document_sessions")
     .update({ status: "signed" })
     .eq("id", sessionId);
+
+  // Log signature_applied event
+  await admin.from("signing_events").insert({
+    session_id: sessionId,
+    signer_id: userId,
+    event_type: "signature_applied",
+    ip_address: ip,
+    metadata: { credential_id: passkey.id, file_name: fileName, file_path: filePath },
+  });
 
   return Response.json({ success: true });
 }
