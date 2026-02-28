@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef, DragEvent, ChangeEvent } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { UploadCloudIcon, FileIcon, CheckCircleIcon, XCircleIcon } from "lucide-react";
+import { UploadCloudIcon, CheckCircleIcon, XCircleIcon } from "lucide-react";
 
 type Status = "idle" | "dragging" | "uploading" | "success" | "error";
 
@@ -11,6 +12,7 @@ export function DocumentUploader() {
   const [message, setMessage] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
+  const router = useRouter();
 
   async function upload(file: File) {
     if (file.type !== "application/pdf") {
@@ -36,10 +38,22 @@ export function DocumentUploader() {
     if (error) {
       setStatus("error");
       setMessage(error.message);
-    } else {
-      setStatus("success");
-      setMessage(`"${file.name}" uploaded successfully.`);
+      return;
     }
+
+    const { data: session, error: sessionError } = await supabase
+      .from("document_sessions")
+      .insert({ owner_id: userId, file_path: path, file_name: file.name })
+      .select("id")
+      .single();
+
+    if (sessionError || !session) {
+      setStatus("error");
+      setMessage(sessionError?.message ?? "Failed to create session.");
+      return;
+    }
+
+    router.push(`/protected/upload/${session.id}`);
   }
 
   function onDrop(e: DragEvent) {
