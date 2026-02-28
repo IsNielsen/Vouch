@@ -56,7 +56,6 @@ export function SignButton({ sessionId, pdfUrl, fileName }: { sessionId: string;
       if (!completeRes.ok) throw new Error(await extractError(completeRes));
 
       setState("signed");
-      if (pdfUrl) downloadBlob(pdfUrl, fileName);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Signing failed";
       setError(msg);
