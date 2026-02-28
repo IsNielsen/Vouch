@@ -94,7 +94,7 @@ export async function POST(
 
     const { secretKey, publicKey } = ml_dsa65.keygen(seed);
     const hashBytes = Buffer.from(documentHash, "hex");
-    const pqcSig = ml_dsa65.sign(secretKey, hashBytes);
+    const pqcSig = ml_dsa65.sign(hashBytes, secretKey);
 
     pqcSignature = Buffer.from(pqcSig).toString("base64");
     pqcPublicKey = Buffer.from(publicKey).toString("base64");
