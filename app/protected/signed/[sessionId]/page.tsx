@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { DownloadButton } from "../download-button";
 import { InlineQR } from "../inline-qr";
-import { CheckCircle, Clock, ArrowLeft } from "lucide-react";
+import { CheckCircle, Clock, ArrowLeft, ShieldCheck } from "lucide-react";
 
 type Signature = {
   id: string;
@@ -141,6 +141,17 @@ async function DocumentDetail({ params }: { params: Promise<{ sessionId: string 
           {/* QR Code for signing */}
           {isOwner && (!isSigned || session.multi_signer) && (
             <InlineQR sessionId={sessionId} />
+          )}
+
+          {/* Verify link */}
+          {isSigned && (
+            <Link
+              href={`/verify/${sessionId}`}
+              className="flex items-center justify-center gap-2 text-sm border rounded-lg px-4 py-2 hover:bg-muted transition-colors"
+            >
+              <ShieldCheck className="h-4 w-4" />
+              View verification page
+            </Link>
           )}
 
           {/* Download */}
