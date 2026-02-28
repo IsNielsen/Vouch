@@ -11,16 +11,20 @@ type SignatureRow = {
   document_sessions: { file_name: string; file_path: string } | null;
 };
 
-async function SignedDocuments({ userId }: { userId: string }) {
+async function SignedDocuments() {
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.getClaims();
+  if (error || !data?.claims) redirect("/auth/login");
+
   const admin = createAdminClient();
 
   const { data: signatures } = await admin
     .from("signatures")
     .select("session_id, created_at, document_sessions (file_name, file_path)")
-    .eq("signer_id", userId)
+    .eq("signer_id", data.claims.sub)
     .order("created_at", { ascending: false });
 
-  const rows = (signatures ?? []) as SignatureRow[];
+  const rows = (signatures ?? []) as unknown as SignatureRow[];
 
   if (!rows.length) {
     return (
@@ -75,11 +79,7 @@ async function SignedDocuments({ userId }: { userId: string }) {
   );
 }
 
-export default async function SignedPage() {
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.getClaims();
-  if (error || !data?.claims) redirect("/auth/login");
-
+export default function SignedPage() {
   return (
     <div className="flex-1 w-full flex flex-col gap-8">
       <div>
@@ -89,7 +89,7 @@ export default async function SignedPage() {
         </p>
       </div>
       <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
-        <SignedDocuments userId={data.claims.sub} />
+        <SignedDocuments />
       </Suspense>
     </div>
   );
