@@ -40,7 +40,7 @@ export default function Home() {
           </p>
         </div>
         <Link
-          href="/auth/login"
+          href="/early-access"
           className="px-8 py-3 rounded-lg bg-foreground text-background font-semibold text-lg hover:bg-foreground/90 transition-colors"
         >
           Get Early Access
