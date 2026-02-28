@@ -42,7 +42,7 @@ export function WaitlistForm() {
           disabled={status === "loading"}
           className="px-6 py-2.5 rounded-lg bg-foreground text-background font-medium hover:bg-foreground/90 transition-colors disabled:opacity-50 whitespace-nowrap cursor-pointer"
         >
-          {status === "loading" ? "Joining..." : "Notify Me"}
+          {status === "loading" ? "Joining..." : "Join the Waitlist"}
         </button>
       </form>
       {status === "error" && (

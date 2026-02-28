@@ -41,8 +41,9 @@ export async function POST(req: Request) {
         transports: passkey.transports ?? undefined,
       },
     });
-  } catch (e: any) {
-    return Response.json({ error: e.message }, { status: 400 });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Verification error";
+    return Response.json({ error: msg }, { status: 400 });
   }
 
   if (!verification.verified) {

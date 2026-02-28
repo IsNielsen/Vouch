@@ -58,9 +58,9 @@ export function PasskeyAuth({ redirectTo = "/protected" }: { redirectTo?: string
       if (error) throw error;
 
       router.push(redirectTo);
-    } catch (e: any) {
+    } catch (e: unknown) {
       setStatus("error");
-      setErrorMsg(e.message ?? "Something went wrong");
+      setErrorMsg(e instanceof Error ? e.message : "Something went wrong");
     }
   }
 
