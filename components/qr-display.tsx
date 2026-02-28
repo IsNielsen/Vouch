@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button";
 interface QRDisplayProps {
   sessionId: string;
   fileName: string;
+  pdfUrl: string | null;
 }
 
-export function QRDisplay({ sessionId, fileName }: QRDisplayProps) {
+export function QRDisplay({ sessionId, fileName, pdfUrl }: QRDisplayProps) {
   const [signUrl, setSignUrl] = useState("");
   const [copied, setCopied] = useState(false);
 
@@ -25,7 +26,20 @@ export function QRDisplay({ sessionId, fileName }: QRDisplayProps) {
   }
 
   return (
-    <div className="flex flex-col items-center gap-6 max-w-sm mx-auto">
+    <div className="flex flex-col gap-6 w-full max-w-2xl mx-auto">
+      {pdfUrl ? (
+        <iframe
+          src={pdfUrl}
+          className="w-full rounded-lg border"
+          style={{ height: "60vh" }}
+          title={fileName}
+        />
+      ) : (
+        <div className="flex items-center justify-center h-48 border rounded-lg text-muted-foreground text-sm">
+          Unable to load document preview.
+        </div>
+      )}
+      <div className="flex flex-col items-center gap-6 max-w-sm mx-auto w-full">
       <div className="text-center">
         <p className="text-sm text-muted-foreground">Document</p>
         <p className="font-medium truncate max-w-xs">{fileName}</p>
@@ -50,6 +64,7 @@ export function QRDisplay({ sessionId, fileName }: QRDisplayProps) {
       <p className="text-sm text-muted-foreground text-center">
         Share this QR code or link with the signer.
       </p>
+      </div>
     </div>
   );
 }

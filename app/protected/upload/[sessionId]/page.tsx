@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { QRDisplay } from "@/components/qr-display";
 
 async function SessionContent({
@@ -16,13 +17,24 @@ async function SessionContent({
 
   const { data: session } = await supabase
     .from("document_sessions")
-    .select("id, file_name")
+    .select("id, file_name, file_path")
     .eq("id", sessionId)
     .single();
 
   if (!session) notFound();
 
-  return <QRDisplay sessionId={session.id} fileName={session.file_name} />;
+  const admin = createAdminClient();
+  const { data: signed } = await admin.storage
+    .from("documents")
+    .createSignedUrl(session.file_path, 3600);
+
+  return (
+    <QRDisplay
+      sessionId={session.id}
+      fileName={session.file_name}
+      pdfUrl={signed?.signedUrl ?? null}
+    />
+  );
 }
 
 export default function SessionQRPage({

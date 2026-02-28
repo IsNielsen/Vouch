@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { PasskeyAuth } from "@/components/passkey-auth";
+import { PdfViewerClient } from "./pdf-viewer-client";
 import { SignButton } from "./sign-button";
 
 async function SignContent({
@@ -33,37 +34,33 @@ async function SignContent({
     pdfUrl = data?.signedUrl ?? null;
   }
 
-  return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Sign Document</h1>
-        <p className="text-muted-foreground mt-1 text-sm">{session.file_name}</p>
-      </div>
-
-      {!isAuthed ? (
-        <div className="flex flex-col items-center gap-4 py-12 border rounded-lg">
+  if (!isAuthed) {
+    return (
+      <div className="flex min-h-svh flex-col items-center justify-center p-6">
+        <div className="flex flex-col items-center gap-4 py-12 border rounded-lg w-full max-w-sm">
           <p className="text-muted-foreground text-sm">
             Sign in to view and sign this document.
           </p>
           <PasskeyAuth redirectTo={`/sign/${sessionId}`} />
         </div>
-      ) : (
-        <>
-          {pdfUrl ? (
-            <iframe
-              src={pdfUrl}
-              className="w-full rounded-lg border"
-              style={{ height: "60vh" }}
-              title={session.file_name}
-            />
-          ) : (
-            <div className="flex items-center justify-center h-48 border rounded-lg text-muted-foreground text-sm">
-              Unable to load document preview.
-            </div>
-          )}
-          <SignButton sessionId={session.id} />
-        </>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col min-h-svh">
+      <div className="flex-1 overflow-hidden p-4 pb-0">
+        {pdfUrl ? (
+          <PdfViewerClient url={pdfUrl} />
+        ) : (
+          <div className="flex items-center justify-center h-full border rounded-lg text-muted-foreground text-sm">
+            Unable to load document preview.
+          </div>
+        )}
+      </div>
+      <div className="p-4 border-t bg-background">
+        <SignButton sessionId={session.id} />
+      </div>
     </div>
   );
 }
@@ -74,12 +71,8 @@ export default function SignPage({
   params: Promise<{ sessionId: string }>;
 }) {
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center p-6">
-      <div className="w-full max-w-2xl">
-        <Suspense>
-          <SignContent params={params} />
-        </Suspense>
-      </div>
-    </div>
+    <Suspense>
+      <SignContent params={params} />
+    </Suspense>
   );
 }
