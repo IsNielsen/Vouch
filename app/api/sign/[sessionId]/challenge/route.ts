@@ -34,12 +34,18 @@ export async function POST(
   const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
   const documentHash = Buffer.from(hashBuffer).toString("hex");
 
-  const { rpID } = getRpConfig(req);
-  const options = await generateAuthenticationOptions({
-    rpID,
-    userVerification: "required",
-    allowCredentials: [],
-  });
+  let options;
+  try {
+    const { rpID } = getRpConfig(req);
+    options = await generateAuthenticationOptions({
+      rpID,
+      userVerification: "required",
+      allowCredentials: [],
+    });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Failed to generate challenge";
+    return Response.json({ error: msg }, { status: 500 });
+  }
 
   const cookieStore = await cookies();
   cookieStore.set(

@@ -11,6 +11,15 @@ export function SignButton({ sessionId }: { sessionId: string }) {
   const [state, setState] = useState<State>("idle");
   const [error, setError] = useState<string | null>(null);
 
+  async function extractError(res: Response): Promise<string> {
+    try {
+      const json = await res.json();
+      return json.error ?? `Server error (${res.status})`;
+    } catch {
+      return `Server error (${res.status})`;
+    }
+  }
+
   async function handleSign() {
     setState("loading");
     setError(null);
@@ -18,7 +27,7 @@ export function SignButton({ sessionId }: { sessionId: string }) {
       const challengeRes = await fetch(`/api/sign/${sessionId}/challenge`, {
         method: "POST",
       });
-      if (!challengeRes.ok) throw new Error((await challengeRes.json()).error);
+      if (!challengeRes.ok) throw new Error(await extractError(challengeRes));
       const options = await challengeRes.json();
 
       const assertion = await startAuthentication({ optionsJSON: options });
@@ -28,7 +37,7 @@ export function SignButton({ sessionId }: { sessionId: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(assertion),
       });
-      if (!completeRes.ok) throw new Error((await completeRes.json()).error);
+      if (!completeRes.ok) throw new Error(await extractError(completeRes));
 
       setState("signed");
     } catch (e: unknown) {
