@@ -7,6 +7,16 @@ import { PenLine, CheckCircle, Loader2, Download } from "lucide-react";
 
 type State = "idle" | "loading" | "signed" | "error";
 
+async function downloadBlob(url: string, fileName: string) {
+  const blob = await fetch(url).then((r) => r.blob());
+  const blobUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = blobUrl;
+  a.download = fileName;
+  a.click();
+  URL.revokeObjectURL(blobUrl);
+}
+
 export function SignButton({ sessionId, pdfUrl, fileName }: { sessionId: string; pdfUrl: string | null; fileName: string }) {
   const [state, setState] = useState<State>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +50,7 @@ export function SignButton({ sessionId, pdfUrl, fileName }: { sessionId: string;
       if (!completeRes.ok) throw new Error(await extractError(completeRes));
 
       setState("signed");
+      if (pdfUrl) downloadBlob(pdfUrl, fileName);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Signing failed";
       setError(msg);
@@ -54,11 +65,9 @@ export function SignButton({ sessionId, pdfUrl, fileName }: { sessionId: string;
         <h2 className="text-2xl font-semibold">Identity Verified</h2>
         <p className="text-muted-foreground text-sm">Document signed successfully.</p>
         {pdfUrl && (
-          <Button asChild>
-            <a href={pdfUrl} download={fileName}>
-              <Download className="h-4 w-4 mr-2" />
-              Download Document
-            </a>
+          <Button onClick={() => downloadBlob(pdfUrl, fileName)}>
+            <Download className="h-4 w-4 mr-2" />
+            Download Again
           </Button>
         )}
       </div>

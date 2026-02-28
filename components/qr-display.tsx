@@ -12,6 +12,16 @@ interface QRDisplayProps {
   pdfUrl: string | null;
 }
 
+async function downloadBlob(url: string, fileName: string) {
+  const blob = await fetch(url).then((r) => r.blob());
+  const blobUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = blobUrl;
+  a.download = fileName;
+  a.click();
+  URL.revokeObjectURL(blobUrl);
+}
+
 export function QRDisplay({ sessionId, fileName, pdfUrl }: QRDisplayProps) {
   const [signUrl, setSignUrl] = useState("");
   const [copied, setCopied] = useState(false);
@@ -42,6 +52,10 @@ export function QRDisplay({ sessionId, fileName, pdfUrl }: QRDisplayProps) {
     return () => { supabase.removeChannel(channel); };
   }, [sessionId]);
 
+  useEffect(() => {
+    if (signed && pdfUrl) downloadBlob(pdfUrl, fileName);
+  }, [signed, pdfUrl, fileName]);
+
   async function copyUrl() {
     await navigator.clipboard.writeText(signUrl);
     setCopied(true);
@@ -57,11 +71,9 @@ export function QRDisplay({ sessionId, fileName, pdfUrl }: QRDisplayProps) {
           The signer has successfully verified their identity and signed the document.
         </p>
         {pdfUrl && (
-          <Button asChild>
-            <a href={pdfUrl} download={fileName}>
-              <Download className="h-4 w-4 mr-2" />
-              Download Document
-            </a>
+          <Button onClick={() => downloadBlob(pdfUrl, fileName)}>
+            <Download className="h-4 w-4 mr-2" />
+            Download Again
           </Button>
         )}
       </div>
