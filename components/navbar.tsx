@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Suspense } from "react";
+import vouchLogo from "@/app/vouchLogo.png";
 import { createClient } from "@/lib/supabase/server";
 import { AuthButton } from "./auth-button";
 import { ThemeSwitcher } from "./theme-switcher";
@@ -33,7 +34,7 @@ export function Navbar() {
       <div className="w-full max-w-5xl flex justify-between items-center p-3 px-5 text-xl">
         <div className="flex gap-5 items-center font-semibold">
           <Link href="/" className="flex items-center gap-2">
-            <Image src="/vouchLogo.png" alt="Vouch logo" width={64} height={64} className="brightness-0 dark:invert" />
+            <Image src={vouchLogo} alt="Vouch logo" width={64} height={64} className="brightness-0 dark:invert" />
             Vouch
           </Link>
           {/* Desktop nav links */}

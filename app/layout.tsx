@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
+import vouchLogo from "./vouchLogo.png";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import { SpeedInsights } from "@vercel/speed-insights/next"
@@ -13,6 +14,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
   title: "Vouch Sign",
   description: "Sign documents securely with passkey authentication",
+  icons: { icon: vouchLogo.src },
 };
 
 const geistSans = Geist({
