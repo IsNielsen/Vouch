@@ -100,10 +100,16 @@ export function SignButton({ sessionId, fileName }: { sessionId: string; pdfUrl:
         <CheckCircle className="h-20 w-20 text-green-500" />
         <h2 className="text-2xl font-semibold">Identity Verified</h2>
         <p className="text-muted-foreground text-sm">Document signed successfully.</p>
-        <Button variant="outline" onClick={() => downloadBlob(`/api/sign/${sessionId}/download`, fileName)}>
-          <Download className="h-4 w-4 mr-2" />
-          Download
-        </Button>
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={() => downloadBlob(`/api/sign/${sessionId}/download`, fileName)}>
+            <Download className="h-4 w-4 mr-2" />
+            Download Document
+          </Button>
+          <Button variant="outline" onClick={() => downloadBlob(`/api/sign/${sessionId}/download?type=certificate`, fileName.replace(/\.pdf$/i, "_certificate.pdf"))}>
+            <Download className="h-4 w-4 mr-2" />
+            Download Certificate
+          </Button>
+        </div>
         <div className="w-full max-w-sm border rounded-lg p-4 flex flex-col gap-3">
           {emailSent ? (
             <p className="text-sm text-center text-muted-foreground">

@@ -1,16 +1,13 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
-export async function appendCertificatePage(
-  pdfBytes: ArrayBuffer,
-  data: {
-    fileName: string;
-    documentHash: string;
-    sessionId: string;
-    signers: { email: string; signedAt: string; credentialId: string }[];
-    verifyUrl: string;
-  }
-): Promise<Uint8Array> {
-  const pdfDoc = await PDFDocument.load(pdfBytes);
+export async function generateCertificate(data: {
+  fileName: string;
+  documentHash: string;
+  sessionId: string;
+  signers: { email: string; signedAt: string; credentialId: string }[];
+  verifyUrl: string;
+}): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.create();
   const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
@@ -28,7 +25,7 @@ export async function appendCertificatePage(
   page.drawLine({ start: { x: 48, y }, end: { x: width - 48, y }, thickness: 1.5, color: black });
 
   y -= 28;
-  page.drawText("SIGNATURE CERTIFICATE  ·  VOUCH", {
+  page.drawText("CERTIFICATE OF COMPLETION  ·  VOUCH", {
     x: 48, y, font: helveticaBold, size: 13, color: black,
   });
 
@@ -47,7 +44,6 @@ export async function appendCertificatePage(
   page.drawText("SHA-256 hash of original document", { x: 48, y, font: helvetica, size: 8, color: gray });
 
   y -= 13;
-  // Show full hash in two lines if needed
   const hash = data.documentHash;
   const half = Math.ceil(hash.length / 2);
   page.drawText(hash.slice(0, half), { x: 48, y, font: helvetica, size: 8, color: gray });
@@ -93,10 +89,6 @@ export async function appendCertificatePage(
     color: lightGray,
   });
   page.drawText(`Verify at: ${data.verifyUrl}`, { x: 48, y: footerY + 8, font: helvetica, size: 8, color: gray });
-  page.drawText(
-    "The ML-DSA-65 cryptographic signature covers the original document hash shown above, not this certificate page.",
-    { x: 48, y: footerY - 4, font: helvetica, size: 7.5, color: gray }
-  );
 
   return pdfDoc.save();
 }
