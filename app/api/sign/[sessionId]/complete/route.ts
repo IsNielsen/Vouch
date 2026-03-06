@@ -3,7 +3,6 @@ import { verifyAuthenticationResponse } from "@simplewebauthn/server";
 import { isoBase64URL } from "@simplewebauthn/server/helpers";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
 import { getRpConfig } from "@/lib/webauthn/rp";
 
 export async function POST(
@@ -17,13 +16,7 @@ export async function POST(
   if (!raw) return Response.json({ error: "No challenge" }, { status: 400 });
   cookieStore.delete(`sign_challenge_${sessionId}`);
 
-  const { challenge, documentHash, userId, fileName, filePath, ip: cookieIp } = JSON.parse(raw);
-
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getClaims();
-  if (!data?.claims || data.claims.sub !== userId) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { challenge, documentHash, fileName, filePath, ip: cookieIp } = JSON.parse(raw);
 
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
@@ -44,7 +37,6 @@ export async function POST(
     .from("passkeys")
     .select("*")
     .eq("id", body.id)
-    .eq("user_id", userId)
     .single();
 
   if (!passkey) return Response.json({ error: "Passkey not found" }, { status: 404 });
@@ -109,12 +101,15 @@ export async function POST(
     return Response.json({ error: msg }, { status: 500 });
   }
 
-  // Check for duplicate signature
+  // Derive identity from passkey — null if signer has no account
+  const userId = passkey.user_id ?? null;
+
+  // Check for duplicate signature by credential_id (works for accountless signers too)
   const { data: existing } = await admin
     .from("signatures")
     .select("id")
     .eq("session_id", sessionId)
-    .eq("signer_id", userId)
+    .eq("credential_id", body.id)
     .maybeSingle();
 
   if (existing) return Response.json({ error: "Already signed" }, { status: 409 });

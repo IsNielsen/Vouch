@@ -59,15 +59,22 @@ export async function POST(req: Request) {
     })
     .eq("id", passkey.id);
 
-  // Get the user's email to generate a magic link
-  const { data: userData, error: userError } = await admin.auth.admin.getUserById(passkey.user_id);
-  if (userError || !userData.user?.email) {
-    return Response.json({ error: "User not found" }, { status: 500 });
+  // Accountless passkeys (signers) have no user_id — not an error, just no session to issue
+  if (!passkey.user_id) {
+    return Response.json({ error: "No account linked to this passkey" }, { status: 404 });
+  }
+
+  // Get the user's email to generate a magic link; derive one for anonymous users
+  const { data: userData } = await admin.auth.admin.getUserById(passkey.user_id);
+  const email = userData.user?.email ?? `uid-${passkey.user_id}@vouch.internal`;
+
+  if (!userData.user?.email) {
+    await admin.auth.admin.updateUserById(passkey.user_id, { email, email_confirm: true });
   }
 
   const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
     type: "magiclink",
-    email: userData.user.email,
+    email,
   });
 
   if (linkError || !linkData.properties?.hashed_token) {

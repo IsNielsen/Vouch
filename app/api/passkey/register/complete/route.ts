@@ -2,6 +2,7 @@ import { verifyRegistrationResponse } from "@simplewebauthn/server";
 import { isoBase64URL } from "@simplewebauthn/server/helpers";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { getRpConfig } from "@/lib/webauthn/rp";
 
 export async function POST(req: Request) {
@@ -35,18 +36,20 @@ export async function POST(req: Request) {
   const { credential, aaguid } = verification.registrationInfo;
   const admin = createAdminClient();
 
-  // Create a new anonymous user with a deterministic internal email
-  const internalEmail = `passkey-${crypto.randomUUID()}@vouch.internal`;
-  const { data: userData, error: userError } = await admin.auth.admin.createUser({
-    email: internalEmail,
-    email_confirm: true,
-  });
+  // Check if there's an existing session (main app flow via signInAnonymously)
+  const supabase = await createClient();
+  const { data: sessionData } = await supabase.auth.getClaims();
 
-  if (userError || !userData.user) {
-    return Response.json({ error: userError?.message ?? "User creation failed" }, { status: 500 });
+  let userId: string | null = null;
+  let tokenHash: string | undefined;
+
+  if (sessionData?.claims) {
+    // Main app: link passkey to existing anonymous session user
+    userId = sessionData.claims.sub;
+  } else {
+    // Signing context: no user account needed
+    userId = null;
   }
-
-  const userId = userData.user.id;
 
   const { error: pkError } = await admin.from("passkeys").insert({
     id: credential.id,
@@ -61,14 +64,26 @@ export async function POST(req: Request) {
     return Response.json({ error: pkError.message }, { status: 500 });
   }
 
-  const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
-    type: "magiclink",
-    email: internalEmail,
-  });
+  // Generate session token only for main app flow (userId present)
+  if (userId) {
+    const { data: userData } = await admin.auth.admin.getUserById(userId);
+    const email = userData.user?.email ?? `uid-${userId}@vouch.internal`;
 
-  if (linkError || !linkData.properties?.hashed_token) {
-    return Response.json({ error: linkError?.message ?? "Link generation failed" }, { status: 500 });
+    if (!userData.user?.email) {
+      await admin.auth.admin.updateUserById(userId, { email, email_confirm: true });
+    }
+
+    const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
+      type: "magiclink",
+      email,
+    });
+
+    if (linkError || !linkData.properties?.hashed_token) {
+      return Response.json({ error: linkError?.message ?? "Link generation failed" }, { status: 500 });
+    }
+
+    tokenHash = linkData.properties.hashed_token;
   }
 
-  return Response.json({ token_hash: linkData.properties.hashed_token });
+  return Response.json(tokenHash ? { token_hash: tokenHash } : { success: true });
 }

@@ -1,7 +1,6 @@
 import { generateAuthenticationOptions } from "@simplewebauthn/server";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
 import { getRpConfig } from "@/lib/webauthn/rp";
 
 export async function POST(
@@ -9,12 +8,6 @@ export async function POST(
   { params }: { params: Promise<{ sessionId: string }> }
 ) {
   const { sessionId } = await params;
-
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getClaims();
-  if (!data?.claims) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const userId = data.claims.sub;
-
   const admin = createAdminClient();
 
   const { data: session } = await admin
@@ -55,7 +48,7 @@ export async function POST(
   // Log consent_granted event
   await admin.from("signing_events").insert({
     session_id: sessionId,
-    signer_id: userId,
+    signer_id: null,
     event_type: "consent_granted",
     ip_address: ip,
   });
@@ -66,7 +59,6 @@ export async function POST(
     JSON.stringify({
       challenge: options.challenge,
       documentHash,
-      userId,
       fileName: session.file_name,
       filePath: session.file_path,
       ip,

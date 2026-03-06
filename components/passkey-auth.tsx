@@ -36,7 +36,10 @@ export function PasskeyAuth({ redirectTo = "/protected" }: { redirectTo?: string
         if (!authCompleteRes.ok) throw new Error(authData.error);
         tokenHash = authData.token_hash;
       } catch {
-        // No credential found — fall back to registration
+        // No credential found — create anonymous session then register passkey
+        const { error: anonError } = await supabase.auth.signInAnonymously();
+        if (anonError) throw anonError;
+
         const regStartRes = await fetch("/api/passkey/register/start", { method: "POST" });
         const regOptions = await regStartRes.json();
         const regCredential = await startRegistration({ optionsJSON: regOptions });

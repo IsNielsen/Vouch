@@ -1,8 +1,6 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
-import { PasskeyAuth } from "@/components/passkey-auth";
 import { PdfViewerClient } from "./pdf-viewer-client";
 import { SignButton } from "./sign-button";
 
@@ -22,36 +20,6 @@ async function SignContent({
 
   if (!session) notFound();
 
-  const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  const isAuthed = !!claims;
-
-  let pdfUrl: string | null = null;
-  let alreadySigned = false;
-
-  if (isAuthed) {
-    const userId = claims!.claims.sub;
-    const [{ data: signedUrl }, { data: existingSig }] = await Promise.all([
-      admin.storage.from("documents").createSignedUrl(session.file_path, 3600),
-      admin.from("signatures").select("id").eq("session_id", sessionId).eq("signer_id", userId).maybeSingle(),
-    ]);
-    pdfUrl = signedUrl?.signedUrl ?? null;
-    alreadySigned = !!existingSig;
-  }
-
-  if (!isAuthed) {
-    return (
-      <div className="flex min-h-svh flex-col items-center justify-center p-6">
-        <div className="flex flex-col items-center gap-4 py-12 border rounded-lg w-full max-w-sm">
-          <p className="text-muted-foreground text-sm">
-            Sign in to view and sign this document.
-          </p>
-          <PasskeyAuth redirectTo={`/sign/${sessionId}`} />
-        </div>
-      </div>
-    );
-  }
-
   if (session.status === "signed") {
     return (
       <div className="flex min-h-svh flex-col items-center justify-center p-6">
@@ -65,18 +33,10 @@ async function SignContent({
     );
   }
 
-  if (alreadySigned) {
-    return (
-      <div className="flex min-h-svh flex-col items-center justify-center p-6">
-        <div className="flex flex-col items-center gap-4 py-12 border rounded-lg w-full max-w-sm">
-          <p className="font-medium">Already signed</p>
-          <p className="text-muted-foreground text-sm text-center">
-            You have already signed this document.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const { data: signedUrl } = await admin.storage
+    .from("documents")
+    .createSignedUrl(session.file_path, 3600);
+  const pdfUrl = signedUrl?.signedUrl ?? null;
 
   return (
     <div className="flex flex-col min-h-svh">

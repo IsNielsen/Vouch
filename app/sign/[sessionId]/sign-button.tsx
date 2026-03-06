@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { startAuthentication } from "@simplewebauthn/browser";
+import { startAuthentication, startRegistration } from "@simplewebauthn/browser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CheckCircle, Download, Mail } from "lucide-react";
@@ -38,15 +38,37 @@ export function SignButton({ sessionId, fileName }: { sessionId: string; pdfUrl:
     }
   }
 
+  async function fetchChallenge() {
+    const res = await fetch(`/api/sign/${sessionId}/challenge`, { method: "POST" });
+    if (!res.ok) throw new Error(await extractError(res));
+    return res.json();
+  }
+
   async function handleSign() {
     setState("loading");
     setError(null);
     try {
-      const challengeRes = await fetch(`/api/sign/${sessionId}/challenge`, { method: "POST" });
-      if (!challengeRes.ok) throw new Error(await extractError(challengeRes));
-      const options = await challengeRes.json();
+      const options = await fetchChallenge();
 
-      const assertion = await startAuthentication({ optionsJSON: options });
+      let assertion;
+      try {
+        assertion = await startAuthentication({ optionsJSON: options });
+      } catch {
+        // New signer — register a passkey (no Supabase user created)
+        const regStart = await fetch("/api/passkey/register/start", { method: "POST" });
+        const regOptions = await regStart.json();
+        const regCredential = await startRegistration({ optionsJSON: regOptions });
+        const regRes = await fetch("/api/passkey/register/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(regCredential),
+        });
+        if (!regRes.ok) throw new Error(await extractError(regRes));
+
+        // Re-fetch challenge and sign with the newly registered key
+        const newOptions = await fetchChallenge();
+        assertion = await startAuthentication({ optionsJSON: newOptions });
+      }
 
       const completeRes = await fetch(`/api/sign/${sessionId}/complete`, {
         method: "POST",
