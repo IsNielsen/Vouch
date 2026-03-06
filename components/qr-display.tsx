@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { CopyIcon, CheckIcon, CheckCircle, Download } from "lucide-react";
+import { CopyIcon, CheckIcon, CheckCircle, Download, SendIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 
 interface QRDisplayProps {
@@ -30,6 +31,10 @@ export function QRDisplay({ sessionId, fileName, pdfUrl, multiSigner, initialSig
   const [signed, setSigned] = useState(false);
   const [signatureCount, setSignatureCount] = useState(initialSignatureCount);
   const [closing, setClosing] = useState(false);
+  const [phone, setPhone] = useState("");
+  const [smsState, setSmsState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [smsError, setSmsError] = useState("");
+  const [textedNumbers, setTextedNumbers] = useState<string[]>([]);
 
   useEffect(() => {
     setSignUrl(`${window.location.origin}/sign/${sessionId}`);
@@ -99,6 +104,26 @@ export function QRDisplay({ sessionId, fileName, pdfUrl, multiSigner, initialSig
     setTimeout(() => setCopied(false), 2000);
   }
 
+  async function sendSms() {
+    setSmsState("sending");
+    setSmsError("");
+    const res = await fetch(`/api/sessions/${sessionId}/send-sms`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone }),
+    });
+    if (res.ok) {
+      setTextedNumbers((prev) => [...prev, phone]);
+      setPhone("");
+      setSmsState("sent");
+      setTimeout(() => setSmsState("idle"), 3000);
+    } else {
+      const json = await res.json().catch(() => ({}));
+      setSmsError(json.error ?? "Failed to send SMS");
+      setSmsState("error");
+    }
+  }
+
   if (signed) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-24">
@@ -158,8 +183,40 @@ export function QRDisplay({ sessionId, fileName, pdfUrl, multiSigner, initialSig
           </Button>
         </div>
 
+        <div className="flex flex-col gap-2 w-full">
+          <div className="flex items-center gap-2 w-full">
+            <Input
+              type="tel"
+              placeholder="+1 (555) 000-0000"
+              value={phone}
+              onChange={(e) => { setPhone(e.target.value); setSmsState("idle"); }}
+              className="flex-1 font-mono text-sm"
+            />
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={sendSms}
+              disabled={!phone || smsState === "sending"}
+              className="shrink-0"
+              title="Send via text"
+            >
+              {smsState === "sent" ? <CheckIcon size={14} /> : <SendIcon size={14} />}
+            </Button>
+          </div>
+          {smsState === "error" && (
+            <p className="text-xs text-destructive">{smsError}</p>
+          )}
+          {multiSigner && textedNumbers.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {textedNumbers.map((n) => (
+                <span key={n} className="text-xs bg-muted px-2 py-0.5 rounded font-mono">{n}</span>
+              ))}
+            </div>
+          )}
+        </div>
+
         <p className="text-sm text-muted-foreground text-center">
-          Share this QR code or link with the signer{multiSigner ? "s" : ""}.
+          Share this QR code, link, or send a text to the signer{multiSigner ? "s" : ""}.
         </p>
 
         {multiSigner && (
