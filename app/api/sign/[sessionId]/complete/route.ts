@@ -4,6 +4,7 @@ import { isoBase64URL } from "@simplewebauthn/server/helpers";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getRpConfig } from "@/lib/webauthn/rp";
+import { fillPdfFields } from "@/lib/pdf/fill-fields";
 
 export async function POST(
   req: Request,
@@ -24,19 +25,22 @@ export async function POST(
     cookieIp ??
     null;
 
-  let body;
+  let body: Record<string, unknown>;
   try {
     body = await req.json();
   } catch {
     return Response.json({ error: "Invalid request body" }, { status: 400 });
   }
+  const signerName = typeof body.signerName === "string" ? body.signerName.trim() : "";
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { signerName: _sn, ...assertion } = body;
   const { rpID, origin } = getRpConfig(req);
   const admin = createAdminClient();
 
   const { data: passkey } = await admin
     .from("passkeys")
     .select("*")
-    .eq("id", body.id)
+    .eq("id", assertion.id)
     .single();
 
   if (!passkey) return Response.json({ error: "Passkey not found" }, { status: 404 });
@@ -44,7 +48,8 @@ export async function POST(
   let verification;
   try {
     verification = await verifyAuthenticationResponse({
-      response: body,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      response: assertion as any,
       expectedChallenge: challenge,
       expectedOrigin: origin,
       expectedRPID: rpID,
@@ -109,7 +114,7 @@ export async function POST(
     .from("signatures")
     .select("id")
     .eq("session_id", sessionId)
-    .eq("credential_id", body.id)
+    .eq("credential_id", assertion.id)
     .maybeSingle();
 
   if (existing) return Response.json({ error: "Already signed" }, { status: 409 });
@@ -117,9 +122,10 @@ export async function POST(
   const { error: insertError } = await admin.from("signatures").insert({
     session_id: sessionId,
     signer_id: userId,
+    signer_name: signerName || null,
     document_hash: documentHash,
     credential_id: passkey.id,
-    authenticator_data: body.response.authenticatorData as string,
+    authenticator_data: (assertion.response as Record<string, unknown>).authenticatorData as string,
     pqc_signature: pqcSignature,
     pqc_public_key: pqcPublicKey,
     ip_address: ip,
@@ -127,6 +133,26 @@ export async function POST(
   });
 
   if (insertError) return Response.json({ error: insertError.message }, { status: 500 });
+
+  // Fill PDF fields (non-fatal)
+  try {
+    const { data: pdfBlob } = await admin.storage.from("documents").download(filePath);
+    if (pdfBlob && signerName) {
+      const pdfBytes = await pdfBlob.arrayBuffer();
+      const filledBytes = await fillPdfFields(pdfBytes, { signerName, signedAt: new Date() });
+      const filledPath = filePath.replace(/\.pdf$/i, "_signed.pdf");
+      await admin.storage.from("documents").upload(filledPath, filledBytes, {
+        contentType: "application/pdf",
+        upsert: true,
+      });
+      await admin
+        .from("document_sessions")
+        .update({ filled_file_path: filledPath })
+        .eq("id", sessionId);
+    }
+  } catch {
+    // non-fatal — signing already recorded
+  }
 
   const { data: docSession } = await admin
     .from("document_sessions")

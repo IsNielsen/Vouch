@@ -22,6 +22,7 @@ async function downloadBlob(url: string, fileName: string) {
 export function SignButton({ sessionId, fileName }: { sessionId: string; pdfUrl: string | null; fileName: string }) {
   const [state, setState] = useState<State>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [signerName, setSignerName] = useState("");
   const [signerEmail, setSignerEmail] = useState("");
   const [emailSent, setEmailSent] = useState(false);
 
@@ -73,7 +74,7 @@ export function SignButton({ sessionId, fileName }: { sessionId: string; pdfUrl:
       const completeRes = await fetch(`/api/sign/${sessionId}/complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(assertion),
+        body: JSON.stringify({ signerName: signerName.trim(), ...assertion }),
       });
       if (!completeRes.ok) throw new Error(await extractError(completeRes));
 
@@ -142,9 +143,19 @@ export function SignButton({ sessionId, fileName }: { sessionId: string; pdfUrl:
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="signer-name" className="text-sm font-medium">Full name</label>
+        <Input
+          id="signer-name"
+          placeholder="Your full legal name"
+          value={signerName}
+          onChange={(e) => setSignerName(e.target.value)}
+          disabled={state === "loading"}
+        />
+      </div>
       {error && <p className="text-destructive text-sm text-center">{error}</p>}
-      <ConsentDisclosure onConsented={handleSign} isLoading={state === "loading"} />
+      <ConsentDisclosure onConsented={handleSign} isLoading={state === "loading"} disabled={!signerName.trim()} />
     </div>
   );
 }

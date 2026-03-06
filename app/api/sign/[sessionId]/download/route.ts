@@ -11,15 +11,20 @@ export async function GET(
 
   const { data: session } = await admin
     .from("document_sessions")
-    .select("file_path, file_name")
+    .select("file_path, file_name, filled_file_path")
     .eq("id", sessionId)
     .single();
 
   if (!session) return new Response("Not found", { status: 404 });
 
+  const pathToDownload =
+    type !== "certificate"
+      ? (session.filled_file_path ?? session.file_path)
+      : session.file_path;
+
   const { data: pdfBlob, error: downloadError } = await admin.storage
     .from("documents")
-    .download(session.file_path);
+    .download(pathToDownload);
 
   if (downloadError || !pdfBlob) {
     return new Response("Failed to fetch document", { status: 500 });
@@ -29,7 +34,6 @@ export async function GET(
   const baseName = safeName.endsWith(".pdf") ? safeName.slice(0, -4) : safeName;
 
   if (type !== "certificate") {
-    // Return original PDF unchanged
     return new Response(pdfBlob, {
       headers: {
         "Content-Type": "application/pdf",

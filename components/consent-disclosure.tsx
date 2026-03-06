@@ -8,9 +8,10 @@ import { PenLine, Loader2 } from "lucide-react";
 interface Props {
   onConsented: () => void;
   isLoading: boolean;
+  disabled?: boolean;
 }
 
-export function ConsentDisclosure({ onConsented, isLoading }: Props) {
+export function ConsentDisclosure({ onConsented, isLoading, disabled }: Props) {
   const [checked, setChecked] = useState(false);
 
   return (
@@ -50,7 +51,7 @@ export function ConsentDisclosure({ onConsented, isLoading }: Props) {
       <Button
         size="lg"
         className="w-full gap-2"
-        disabled={!checked || isLoading}
+        disabled={!checked || isLoading || !!disabled}
         onClick={onConsented}
       >
         {isLoading ? (
