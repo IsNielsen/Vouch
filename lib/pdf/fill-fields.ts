@@ -13,7 +13,8 @@ export async function fillPdfFields(
 
   // Pass 1 — AcroForm fields
   let form: ReturnType<typeof pdfDoc.getForm> | null = null;
-  let fields: ReturnType<typeof form.getFields> = [];
+  type PDFField = ReturnType<ReturnType<typeof pdfDoc.getForm>["getFields"]>[number];
+  let fields: PDFField[] = [];
   try {
     form = pdfDoc.getForm();
     fields = form.getFields();
