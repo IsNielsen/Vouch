@@ -8,6 +8,7 @@ import { CheckCircle, Download, Mail } from "lucide-react";
 import { ConsentDisclosure } from "@/components/consent-disclosure";
 
 type State = "idle" | "loading" | "signed" | "error";
+type Step = "name" | "sign";
 
 async function downloadBlob(url: string, fileName: string) {
   const blob = await fetch(url).then((r) => r.blob());
@@ -21,6 +22,7 @@ async function downloadBlob(url: string, fileName: string) {
 
 export function SignButton({ sessionId, fileName }: { sessionId: string; pdfUrl: string | null; fileName: string }) {
   const [state, setState] = useState<State>("idle");
+  const [step, setStep] = useState<Step>("name");
   const [error, setError] = useState<string | null>(null);
   const [signerName, setSignerName] = useState("");
   const [signerEmail, setSignerEmail] = useState("");
@@ -142,20 +144,33 @@ export function SignButton({ sessionId, fileName }: { sessionId: string; pdfUrl:
     );
   }
 
+  if (step === "name") {
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="signer-name" className="text-sm font-medium">Full name</label>
+          <Input
+            id="signer-name"
+            placeholder="Your full legal name"
+            value={signerName}
+            onChange={(e) => setSignerName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && signerName.trim()) setStep("sign"); }}
+          />
+        </div>
+        <Button disabled={!signerName.trim()} onClick={() => setStep("sign")}>
+          Continue →
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="signer-name" className="text-sm font-medium">Full name</label>
-        <Input
-          id="signer-name"
-          placeholder="Your full legal name"
-          value={signerName}
-          onChange={(e) => setSignerName(e.target.value)}
-          disabled={state === "loading"}
-        />
-      </div>
+      <p className="text-sm text-muted-foreground">
+        Signing as: <span className="font-medium text-foreground">{signerName}</span>
+      </p>
       {error && <p className="text-destructive text-sm text-center">{error}</p>}
-      <ConsentDisclosure onConsented={handleSign} isLoading={state === "loading"} disabled={!signerName.trim()} />
+      <ConsentDisclosure onConsented={handleSign} isLoading={state === "loading"} disabled={false} />
     </div>
   );
 }
