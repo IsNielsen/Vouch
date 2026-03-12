@@ -2,11 +2,20 @@ import { generateAuthenticationOptions } from "@simplewebauthn/server";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getRpConfig } from "@/lib/webauthn/rp";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ sessionId: string }> }
 ) {
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
+    req.headers.get("x-real-ip") ??
+    null;
+  if (rateLimit(ip ?? "unknown")) {
+    return Response.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const { sessionId } = await params;
   const admin = createAdminClient();
 
@@ -39,11 +48,6 @@ export async function POST(
     const msg = e instanceof Error ? e.message : "Failed to generate challenge";
     return Response.json({ error: msg }, { status: 500 });
   }
-
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
-    req.headers.get("x-real-ip") ??
-    null;
 
   // Log consent_granted event
   await admin.from("signing_events").insert({
