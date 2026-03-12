@@ -23,6 +23,7 @@ NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...           # Server-only, never expose to client
 NEXT_PUBLIC_WEBAUTHN_RP_NAME=...        # Optional, defaults to "Vouch"
+PQC_HMAC_SECRET=...                     # Server-only, required; HMAC seed for PQC key derivation — rotate independently of Supabase keys
 ```
 
 `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` accepts either `sb_publishable_...` or the legacy anon key format.
@@ -56,7 +57,7 @@ Use `supabase.auth.getClaims()` (fast, JWT-based) instead of `supabase.auth.getU
 3. **Sign** — `app/sign/[sessionId]/page.tsx` (public, no auth required) → signer authenticates with passkey via `<SignButton>`
 4. **Signature** — `/api/sign/[sessionId]/complete/route.ts`:
    - Verifies WebAuthn response
-   - Derives ML-DSA key from `HMAC(service_role_key, "pqc-v1:" + credential_id)` — post-quantum cryptography via `@noble/post-quantum`
+   - Derives ML-DSA key from `HMAC(PQC_HMAC_SECRET, "pqc-v1:" + credential_id)` — post-quantum cryptography via `@noble/post-quantum`
    - Signs SHA-256 document hash; stores `document_hash`, `pqc_signature`, `pqc_public_key`, `authenticator_data`, `ip_address`
    - Updates session status to `"signed"`, logs `signature_applied` event
 

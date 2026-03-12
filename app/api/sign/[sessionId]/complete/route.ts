@@ -78,12 +78,17 @@ export async function POST(
     })
     .eq("id", passkey.id);
 
+  const pqcHmacSecret = process.env.PQC_HMAC_SECRET;
+  if (!pqcHmacSecret) {
+    return Response.json({ error: "PQC_HMAC_SECRET is not configured" }, { status: 500 });
+  }
+
   let pqcSignature: string;
   let pqcPublicKey: string;
   try {
     const hmacKey = await crypto.subtle.importKey(
       "raw",
-      Buffer.from(process.env.SUPABASE_SERVICE_ROLE_KEY!),
+      Buffer.from(pqcHmacSecret),
       { name: "HMAC", hash: "SHA-256" },
       false,
       ["sign"]
