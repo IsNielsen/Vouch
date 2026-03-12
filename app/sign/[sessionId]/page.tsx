@@ -12,13 +12,16 @@ async function SignContent({
   const { sessionId } = await params;
   const admin = createAdminClient();
 
-  const { data: session } = await admin
+  const { data: row } = await admin
     .from("document_sessions")
     .select("id, file_name, file_path, status")
     .eq("id", sessionId)
     .single();
 
-  if (!session) notFound();
+  if (!row) notFound();
+
+  // Destructure file_path out immediately — it must not be passed to client components.
+  const { file_path, ...session } = row;
 
   if (session.status === "signed") {
     return (
@@ -35,7 +38,7 @@ async function SignContent({
 
   const { data: signedUrl } = await admin.storage
     .from("documents")
-    .createSignedUrl(session.file_path, 3600);
+    .createSignedUrl(file_path, 3600);
   const pdfUrl = signedUrl?.signedUrl ?? null;
 
   return (
@@ -50,7 +53,7 @@ async function SignContent({
         )}
       </div>
       <div className="p-4 border-t bg-background">
-        <SignButton sessionId={session.id} pdfUrl={pdfUrl} fileName={session.file_name} />
+        <SignButton sessionId={session.id} fileName={session.file_name} />
       </div>
     </div>
   );

@@ -20,7 +20,7 @@ async function downloadBlob(url: string, fileName: string) {
   URL.revokeObjectURL(blobUrl);
 }
 
-export function SignButton({ sessionId, fileName }: { sessionId: string; pdfUrl: string | null; fileName: string }) {
+export function SignButton({ sessionId, fileName }: { sessionId: string; fileName: string }) {
   const [state, setState] = useState<State>("idle");
   const [step, setStep] = useState<Step>("name");
   const [error, setError] = useState<string | null>(null);
