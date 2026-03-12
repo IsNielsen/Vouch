@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { generateCertificate } from "@/lib/pdf/certificate";
 
 export async function GET(
@@ -7,15 +8,28 @@ export async function GET(
 ) {
   const { sessionId } = await params;
   const type = new URL(req.url).searchParams.get("type");
+
+  // Auth check
+  const supabase = await createClient();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  if (!claimsData?.claims) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+  const userId = claimsData.claims.sub;
+
   const admin = createAdminClient();
 
   const { data: session } = await admin
     .from("document_sessions")
-    .select("file_path, file_name, filled_file_path")
+    .select("file_path, file_name, filled_file_path, owner_id")
     .eq("id", sessionId)
     .single();
 
   if (!session) return new Response("Not found", { status: 404 });
+
+  if (session.owner_id !== userId) {
+    return new Response("Forbidden", { status: 403 });
+  }
 
   const pathToDownload =
     type !== "certificate"
