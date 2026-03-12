@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { PenLine, Loader2 } from "lucide-react";
+import Link from "next/link";
 
 interface Props {
   onConsented: () => void;
@@ -34,6 +35,15 @@ export function ConsentDisclosure({ onConsented, isLoading, disabled }: Props) {
         <p>
           <span className="font-medium text-foreground">Paper copy:</span> Contact the
           document owner to request a paper copy of this document.
+        </p>
+        <p>
+          <span className="font-medium text-foreground">Data &amp; privacy:</span> Your IP
+          address and signing events are logged for security and audit purposes and retained
+          for 90 days. See our{" "}
+          <Link href="/privacy" className="underline hover:text-foreground">
+            Privacy Policy
+          </Link>{" "}
+          for details.
         </p>
       </div>
 
