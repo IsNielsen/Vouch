@@ -12,9 +12,9 @@ export function PasskeyAuth({ redirectTo = "/protected" }: { redirectTo?: string
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const router = useRouter();
-  const supabase = createClient();
 
   async function handlePasskey() {
+    const supabase = createClient();
     setStatus("loading");
     setErrorMsg("");
 
