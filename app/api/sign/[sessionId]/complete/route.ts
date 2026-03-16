@@ -156,7 +156,7 @@ export async function POST(
 
   const { data: docSession } = await admin
     .from("document_sessions")
-    .select("multi_signer")
+    .select("multi_signer, webhook_url")
     .eq("id", sessionId)
     .single();
 
@@ -165,6 +165,22 @@ export async function POST(
       .from("document_sessions")
       .update({ status: "signed" })
       .eq("id", sessionId);
+  }
+
+  // Fire webhook (fire-and-forget, best-effort)
+  if (docSession?.webhook_url) {
+    fetch(docSession.webhook_url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        event: "signature.completed",
+        session_id: sessionId,
+        signer_name: signerName,
+        document_hash: documentHash,
+        signed_at: new Date().toISOString(),
+        pqc_public_key: pqcPublicKey,
+      }),
+    }).catch(() => {});
   }
 
   // Log signature_applied event

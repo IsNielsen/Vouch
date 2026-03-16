@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Upload, FileCheck } from "lucide-react";
+import { Upload, FileCheck, Code2 } from "lucide-react";
 
 export default function ProtectedPage() {
 
@@ -28,6 +28,18 @@ export default function ProtectedPage() {
             <p className="font-semibold text-lg">Signed Documents</p>
             <p className="text-sm text-muted-foreground">
               View and download completed signatures
+            </p>
+          </div>
+        </Link>
+        <Link
+          href="/protected/api-test"
+          className="flex items-center gap-4 p-6 rounded-lg border hover:bg-accent transition-colors"
+        >
+          <Code2 size={28} />
+          <div>
+            <p className="font-semibold text-lg">API Console</p>
+            <p className="text-sm text-muted-foreground">
+              Generate API keys and test the Vouch-Link API
             </p>
           </div>
         </Link>

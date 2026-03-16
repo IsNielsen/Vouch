@@ -20,7 +20,21 @@ async function downloadBlob(url: string, fileName: string) {
   URL.revokeObjectURL(blobUrl);
 }
 
-export function SignButton({ sessionId, fileName }: { sessionId: string; pdfUrl: string | null; fileName: string }) {
+interface Branding {
+  logoUrl?: string;
+  primaryColor?: string;
+}
+
+export function SignButton({
+  sessionId,
+  fileName,
+  branding,
+}: {
+  sessionId: string;
+  pdfUrl: string | null;
+  fileName: string;
+  branding?: Branding;
+}) {
   const [state, setState] = useState<State>("idle");
   const [step, setStep] = useState<Step>("name");
   const [error, setError] = useState<string | null>(null);
@@ -144,9 +158,17 @@ export function SignButton({ sessionId, fileName }: { sessionId: string; pdfUrl:
     );
   }
 
+  const brandingStyle = branding?.primaryColor
+    ? ({ "--brand-primary": branding.primaryColor } as React.CSSProperties)
+    : undefined;
+
   if (step === "name") {
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4" style={brandingStyle}>
+        {branding?.logoUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={branding.logoUrl} alt="Brand logo" className="h-8 object-contain self-start" />
+        )}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="signer-name" className="text-sm font-medium">Full name</label>
           <Input
@@ -157,7 +179,11 @@ export function SignButton({ sessionId, fileName }: { sessionId: string; pdfUrl:
             onKeyDown={(e) => { if (e.key === "Enter" && signerName.trim()) setStep("sign"); }}
           />
         </div>
-        <Button disabled={!signerName.trim()} onClick={() => setStep("sign")}>
+        <Button
+          disabled={!signerName.trim()}
+          onClick={() => setStep("sign")}
+          style={branding?.primaryColor ? { backgroundColor: branding.primaryColor, borderColor: branding.primaryColor } : undefined}
+        >
           Continue →
         </Button>
       </div>
@@ -165,12 +191,16 @@ export function SignButton({ sessionId, fileName }: { sessionId: string; pdfUrl:
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4" style={brandingStyle}>
+      {branding?.logoUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={branding.logoUrl} alt="Brand logo" className="h-8 object-contain self-start" />
+      )}
       <p className="text-sm text-muted-foreground">
         Signing as: <span className="font-medium text-foreground">{signerName}</span>
       </p>
       {error && <p className="text-destructive text-sm text-center">{error}</p>}
-      <ConsentDisclosure onConsented={handleSign} isLoading={state === "loading"} disabled={false} />
+      <ConsentDisclosure onConsented={handleSign} isLoading={state === "loading"} disabled={false} primaryColor={branding?.primaryColor} />
     </div>
   );
 }
