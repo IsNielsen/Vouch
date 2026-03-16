@@ -14,7 +14,7 @@ async function SignContent({
 
   const { data: session } = await admin
     .from("document_sessions")
-    .select("id, file_name, file_path, status")
+    .select("id, file_name, file_path, status, branding_logo_url, branding_primary_color")
     .eq("id", sessionId)
     .single();
 
@@ -50,7 +50,19 @@ async function SignContent({
         )}
       </div>
       <div className="p-4 border-t bg-background">
-        <SignButton sessionId={session.id} pdfUrl={pdfUrl} fileName={session.file_name} />
+        <SignButton
+          sessionId={session.id}
+          pdfUrl={pdfUrl}
+          fileName={session.file_name}
+          branding={
+            session.branding_logo_url || session.branding_primary_color
+              ? {
+                  logoUrl: session.branding_logo_url ?? undefined,
+                  primaryColor: session.branding_primary_color ?? undefined,
+                }
+              : undefined
+          }
+        />
       </div>
     </div>
   );

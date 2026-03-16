@@ -9,9 +9,10 @@ interface Props {
   onConsented: () => void;
   isLoading: boolean;
   disabled?: boolean;
+  primaryColor?: string;
 }
 
-export function ConsentDisclosure({ onConsented, isLoading, disabled }: Props) {
+export function ConsentDisclosure({ onConsented, isLoading, disabled, primaryColor }: Props) {
   const [checked, setChecked] = useState(false);
 
   return (
@@ -53,6 +54,7 @@ export function ConsentDisclosure({ onConsented, isLoading, disabled }: Props) {
         className="w-full gap-2"
         disabled={!checked || isLoading || !!disabled}
         onClick={onConsented}
+        style={primaryColor ? { backgroundColor: primaryColor, borderColor: primaryColor } : undefined}
       >
         {isLoading ? (
           <Loader2 className="h-5 w-5 animate-spin" />
