@@ -5,16 +5,16 @@ import { useEffect, useState } from "react";
 
 const SLIDES = [
   {
-    headline: "One scan. One tap. Signed.",
-    body: "Vouch is the fastest way to collect in-person electronic signatures — no printing, no email links, no waiting. Show the document, they tap to sign with their biometrics, and you're done.",
+    headline: "Stop fraud at the point of transaction.",
+    body: "Add biometric proof-of-presence to any payment or high-risk action — one API call returns a post-quantum cryptographic receipt tied to the user's face or fingerprint.",
   },
   {
-    headline: "Secured by post-quantum cryptography.",
-    body: "Every signature is protected by ML-DSA — a NIST-standardized post-quantum algorithm — ensuring your documents remain tamper-proof against both today's and tomorrow's threats.",
+    headline: "Your backend gets a signed receipt.",
+    body: "Every verification produces an ML-DSA signature — NIST-standardized, quantum-resistant — giving you immutable proof that cannot be forged, spoofed, or stolen.",
   },
   {
-    headline: "Your biometrics are your signature.",
-    body: "Signers authenticate with their device's built-in passkey. No account needed, no biometric data ever stored or transmitted — just a cryptographic proof that only they could produce.",
+    headline: "Zero PII stored. Biometrics stay on device.",
+    body: "Users authenticate with their device's built-in passkey. No biometric data ever reaches your servers. No passwords to phish. No credentials to breach.",
   },
 ];
 
@@ -46,10 +46,10 @@ export function Hero() {
               : "animate-in slide-in-from-right fade-in duration-500"
           }`}
         >
-        <h1 className="text-5xl sm:text-6xl font-bold tracking-tight leading-tight text-white">
-          {slide.headline}
-        </h1>
-        <p className="text-xl text-white/80 max-w-2xl mx-auto">{slide.body}</p>
+          <h1 className="text-5xl sm:text-6xl font-bold tracking-tight leading-tight text-white">
+            {slide.headline}
+          </h1>
+          <p className="text-xl text-white/80 max-w-2xl mx-auto">{slide.body}</p>
         </div>
       </div>
       <div className="flex flex-wrap items-center justify-center gap-4">

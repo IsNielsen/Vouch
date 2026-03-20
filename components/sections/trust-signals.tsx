@@ -1,10 +1,10 @@
-import { Smartphone, Wifi, Clock, Scale } from "lucide-react";
+import { ShieldCheck, Fingerprint, EyeOff, Code2 } from "lucide-react";
 
 const signals = [
-  { icon: Smartphone, label: "Works on any phone" },
-  { icon: Wifi, label: "No app needed" },
-  { icon: Clock, label: "Signed in seconds" },
-  { icon: Scale, label: "ESIGN/UETA compliant" },
+  { icon: ShieldCheck, label: "WebAuthn W3C Standard" },
+  { icon: Fingerprint, label: "NIST FIPS 204 ML-DSA" },
+  { icon: EyeOff, label: "Zero PII stored" },
+  { icon: Code2, label: "REST API" },
 ];
 
 export function TrustSignals() {

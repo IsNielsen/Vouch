@@ -1,11 +1,11 @@
 import { Suspense } from "react";
 import { Navbar } from "@/components/navbar";
 import { Hero } from "@/components/sections/hero";
-import { UploadFeature } from "@/components/sections/upload-feature";
-import { FeaturesGrid } from "@/components/sections/features-grid";
+import { Problem } from "@/components/sections/problem";
+import { WhyVouch } from "@/components/sections/why-vouch";
 import { Pricing } from "@/components/sections/pricing";
-import { WhoUses } from "@/components/sections/who-uses";
-import { CtaSplit } from "@/components/sections/cta-split";
+import { WhoItsFor } from "@/components/sections/who-its-for";
+import { Cta } from "@/components/sections/cta";
 import { TrustSignals } from "@/components/sections/trust-signals";
 import { SignatureCount } from "@/components/sections/signature-count";
 import { HowItWorks } from "@/components/sections/how-it-works";
@@ -20,11 +20,11 @@ export default function Home() {
       <Suspense>
         <SignatureCount />
       </Suspense>
-      <UploadFeature />
-      <FeaturesGrid />
+      <Problem />
+      <WhyVouch />
       <Pricing />
-      <WhoUses />
-      <CtaSplit />
+      <WhoItsFor />
+      <Cta />
       <TrustSignals />
       <HowItWorks />
       <Faq />
