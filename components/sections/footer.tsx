@@ -7,7 +7,7 @@ export function Footer() {
         <div className="flex flex-col gap-3">
           <span className="font-bold text-xl text-primary">Vouch</span>
           <p className="text-muted-foreground text-sm leading-relaxed">
-            In-person electronic signatures that close in seconds. One scan, one tap, done.
+            Biometric fraud prevention API. Post-quantum signed receipts for every verification.
           </p>
         </div>
         <div className="flex flex-col gap-3">

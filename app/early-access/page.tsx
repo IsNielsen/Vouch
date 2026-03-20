@@ -8,7 +8,9 @@ export default function EarlyAccessPage() {
       <section className="flex-1 flex items-center justify-center px-6 py-24">
         <div className="max-w-xl w-full text-center flex flex-col gap-4">
           <h1 className="text-3xl font-bold">Get Early Access</h1>
-          <p className="text-muted-foreground">Join the waitlist for the Vouch Beta.</p>
+          <p className="text-muted-foreground">
+            Join the waitlist for the Vouch API. Tell us what you&apos;re building — we&apos;re onboarding fintech teams first.
+          </p>
           <WaitlistForm />
         </div>
       </section>

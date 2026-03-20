@@ -3,15 +3,19 @@
 import { useState } from "react";
 import { joinWaitlist } from "@/app/actions/waitlist";
 
+const inputCls = "flex-1 px-4 py-2.5 rounded-lg border border-foreground/20 bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20";
+
 export function WaitlistForm() {
   const [email, setEmail] = useState("");
+  const [company, setCompany] = useState("");
+  const [useCase, setUseCase] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setStatus("loading");
-    const result = await joinWaitlist(email);
+    const result = await joinWaitlist({ email, company, useCase });
     if (result.error) {
       setStatus("error");
       setMessage(result.error);
@@ -19,6 +23,8 @@ export function WaitlistForm() {
       setStatus("success");
       setMessage("You're on the list! We'll be in touch soon.");
       setEmail("");
+      setCompany("");
+      setUseCase("");
     }
   }
 
@@ -34,8 +40,22 @@ export function WaitlistForm() {
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="Enter your email"
-          className="flex-1 px-4 py-2.5 rounded-lg border border-foreground/20 bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20"
+          placeholder="Work email"
+          className={inputCls}
+        />
+        <input
+          type="text"
+          value={company}
+          onChange={(e) => setCompany(e.target.value)}
+          placeholder="Company name"
+          className={inputCls}
+        />
+        <input
+          type="text"
+          value={useCase}
+          onChange={(e) => setUseCase(e.target.value)}
+          placeholder="What are you protecting? (e.g. payments, withdrawals)"
+          className={inputCls}
         />
         <button
           type="submit"

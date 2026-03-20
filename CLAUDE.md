@@ -11,9 +11,8 @@ I am risk at losing my job so be extra rigorous.
 npm run dev      # Start development server on localhost:3000
 npm run build    # Production build
 npm run lint     # ESLint check
+npm test         # Vitest unit tests
 ```
-
-No test suite is configured.
 
 ## Environment Variables
 
@@ -23,6 +22,7 @@ NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...           # Server-only, never expose to client
 NEXT_PUBLIC_WEBAUTHN_RP_NAME=...        # Optional, defaults to "Vouch"
+VOUCH_API_KEY=...                       # Bearer token for /api/vouch/* routes
 ```
 
 `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` accepts either `sb_publishable_...` or the legacy anon key format.
@@ -69,6 +69,20 @@ Use `supabase.auth.getClaims()` (fast, JWT-based) instead of `supabase.auth.getU
 - `/early-access` — Waitlist page
 - `/api/passkey/*` — WebAuthn registration/authentication
 - `/api/sign/[sessionId]/*` — Signing challenge, completion, events, send-copy
+- `/api/vouch/challenge` — POST: create a fraud-prevention challenge (Bearer auth via `VOUCH_API_KEY`)
+- `/api/vouch/challenge/[challengeId]` — GET: poll challenge status
+- `/api/vouch/verify/[challengeId]` — POST: verify WebAuthn assertion, returns ML-DSA signed receipt
+
+### Vouch API Flow
+
+1. **Challenge** — `POST /api/vouch/challenge` with `{ transaction_context: {...} }` → returns `{ challenge_id, webauthn_options, expires_in: 300 }`
+2. **Frontend** — pass `webauthn_options` to browser WebAuthn API, collect assertion
+3. **Verify** — `POST /api/vouch/verify/[challengeId]` with `{ assertion }` → returns signed receipt with `pqc_signature`, `pqc_public_key`, `verified_at`
+
+All `/api/vouch/*` routes require `Authorization: Bearer $VOUCH_API_KEY`.
+
+DB table required: `vouch_challenges` (see SQL comment in `app/api/vouch/challenge/route.ts`).
+Waitlist table migration: add `company text`, `use_case text` columns.
 
 ### Key Patterns
 

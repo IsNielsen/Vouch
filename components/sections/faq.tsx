@@ -1,27 +1,27 @@
 const faqs = [
   {
-    q: "Is an in-person electronic signature legally binding?",
-    a: "Yes. ESIGN and UETA recognize electronic signatures as fully enforceable when signer intent is clear. Vouch pairs that with biometric identity proof captured in the moment — stronger than a wet ink signature.",
+    q: "What exactly does Vouch verify?",
+    a: "Vouch verifies that the person holding the registered device — and who can authenticate with its biometric sensor — approved a specific transaction context. You send the context (amount, payee, action), and Vouch returns a cryptographic receipt proving the user's biometric was presented for that exact context.",
   },
   {
-    q: "Does the signer need to download anything?",
-    a: "No. They scan a QR code or tap NFC with their phone, verify with Face ID or fingerprint, and they're done. No app, no account, no friction.",
+    q: "How is this different from WebAuthn I already have?",
+    a: "Standard WebAuthn proves authentication. Vouch adds a post-quantum ML-DSA signature over the transaction context — tying the biometric event to a specific payload. That receipt is your dispute-proof evidence, independently verifiable without calling Vouch.",
   },
   {
-    q: "How fast is the signing experience?",
-    a: "Under 30 seconds from scan to sealed document. The signer sees the document, authenticates biometrically, confirms intent, and it's done — before they've had time to reconsider.",
+    q: "What is ML-DSA and why does it matter?",
+    a: "ML-DSA (Module-Lattice-Based Digital Signature Algorithm) is a NIST-standardized post-quantum algorithm, finalized in FIPS 204. Unlike RSA or ECDSA, ML-DSA signatures remain secure against cryptanalytic attacks from quantum computers — ensuring your receipts hold up for years.",
   },
   {
-    q: "What devices can signers use?",
-    a: "Any modern smartphone with a biometric sensor — iPhone (Face ID / Touch ID) or Android (fingerprint / face unlock). No special hardware required on your end.",
+    q: "Is any biometric data stored by Vouch?",
+    a: "No. Biometric verification happens entirely within the hardware-backed secure enclave on the user's device. The biometric never leaves the device. Vouch only sees the cryptographic assertion produced by the enclave.",
   },
   {
-    q: "What happens if a signer disputes the signature?",
-    a: "Every session generates a cryptographically sealed audit trail — timestamp, biometric confirmation, device fingerprint, and location — giving you ironclad evidence in any dispute.",
+    q: "How do I integrate?",
+    a: "Two API calls: POST /api/vouch/challenge with your transaction context to start the flow, then POST /api/vouch/verify with the WebAuthn assertion and challenge ID to complete it. The verify response contains the ML-DSA signed receipt.",
   },
   {
-    q: "Will my signed documents hold up in 10, 20, or 30 years — even as AI and quantum computing advance?",
-    a: "Yes — and we've designed Vouch specifically with this in mind. A few reasons your documents stay valid: First, legal enforceability under ESIGN and UETA is determined by the evidence captured at the moment of signing, not by future technology. Second, Vouch uses NIST-standardized post-quantum cryptographic algorithms (ML-DSA and SLH-DSA, finalized in FIPS 204/205) that are mathematically resistant to attacks from quantum computers — unlike the RSA and ECC algorithms most services still rely on. Third, biometric verification happens entirely on the signer's device inside a hardware-backed secure enclave. Their biometric data is never sent to our servers, so there is no central database for AI or any attacker to compromise. Even if every other layer were someday challenged, the layered audit trail — document hash, timestamp, biometric confirmation, device fingerprint, and IP — provides redundant proof that courts can rely on for decades.",
+    q: "What regulations does this support?",
+    a: "The biometric + cryptographic audit trail supports Strong Customer Authentication (SCA) under PSD2/PSD3, FFIEC guidance on layered security, and provides the documented evidence trail required under CFPB dispute resolution rules.",
   },
 ];
 

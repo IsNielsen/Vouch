@@ -12,7 +12,7 @@ export async function SignatureCount() {
   return (
     <section className="py-10 px-6 border-b border-border text-center">
       <p className="text-muted-foreground text-sm uppercase tracking-widest mb-1">
-        Signatures vouched for 
+        Verifications vouched for
       </p>
       <p className="text-5xl font-bold tabular-nums">{count}</p>
     </section>

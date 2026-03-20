@@ -1,8 +1,24 @@
 const steps = [
-  { step: "01", title: "Upload your PDF", body: "Add your document once — reuse it every time." },
-  { step: "02", title: "Show the QR or tap NFC", body: "Pull up Vouch when you're face-to-face. One scan or tap is all it takes." },
-  { step: "03", title: "They verify & sign", body: "The signer authenticates with Face ID or fingerprint on their own device. Done in seconds." },
-  { step: "04", title: "Sealed and stored", body: "A tamper-evident PDF with full audit trail is ready the moment they sign." },
+  {
+    step: "01",
+    title: "Your backend calls /challenge",
+    body: "Send the transaction context (amount, payee, action). Vouch returns WebAuthn options and a challenge_id.",
+  },
+  {
+    step: "02",
+    title: "Your frontend prompts biometrics",
+    body: "Pass the WebAuthn options to the browser. The user authenticates with Face ID or fingerprint — no app, no account.",
+  },
+  {
+    step: "03",
+    title: "Your backend calls /verify",
+    body: "Send the credential assertion and challenge_id. Vouch verifies the WebAuthn response and signs the transaction context with ML-DSA.",
+  },
+  {
+    step: "04",
+    title: "You receive a signed receipt",
+    body: "A post-quantum cryptographic receipt tied to the user's biometric and the exact transaction — immutable evidence for disputes and audits.",
+  },
 ];
 
 export function HowItWorks() {

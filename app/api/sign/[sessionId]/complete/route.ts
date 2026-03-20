@@ -78,8 +78,22 @@ export async function POST(
     })
     .eq("id", passkey.id);
 
+  // Derive identity from passkey — null if signer has no account
+  const userId = passkey.user_id ?? null;
+
+  // Fetch document session early to get transaction_context (and reuse below)
+  // SQL migration: ALTER TABLE document_sessions ADD COLUMN IF NOT EXISTS transaction_context jsonb;
+  // SQL migration: ALTER TABLE signatures ADD COLUMN IF NOT EXISTS transaction_context_signature text;
+  const { data: docSession } = await admin
+    .from("document_sessions")
+    .select("multi_signer, webhook_url, transaction_context")
+    .eq("id", sessionId)
+    .single();
+
+  // Derive PQC keypair once — reused for document hash and optionally transaction_context
   let pqcSignature: string;
   let pqcPublicKey: string;
+  let pqcSecretKey!: Uint8Array;
   try {
     const hmacKey = await crypto.subtle.importKey(
       "raw",
@@ -96,6 +110,7 @@ export async function POST(
     const seed = new Uint8Array(seedBuffer).slice(0, 32);
 
     const { secretKey, publicKey } = ml_dsa65.keygen(seed);
+    pqcSecretKey = secretKey;
     const hashBytes = Buffer.from(documentHash, "hex");
     const pqcSig = ml_dsa65.sign(hashBytes, secretKey);
 
@@ -106,8 +121,18 @@ export async function POST(
     return Response.json({ error: msg }, { status: 500 });
   }
 
-  // Derive identity from passkey — null if signer has no account
-  const userId = passkey.user_id ?? null;
+  // Sign transaction_context if present (additive, non-fatal)
+  let transactionContextSignature: string | null = null;
+  if (docSession?.transaction_context) {
+    try {
+      const ctxBytes = Buffer.from(JSON.stringify(docSession.transaction_context));
+      const ctxHash = await crypto.subtle.digest("SHA-256", ctxBytes);
+      const ctxSig = ml_dsa65.sign(new Uint8Array(ctxHash), pqcSecretKey);
+      transactionContextSignature = Buffer.from(ctxSig).toString("base64");
+    } catch (e) {
+      console.error("[sign] transaction_context signing failed:", e);
+    }
+  }
 
   // Check for duplicate signature by credential_id (works for accountless signers too)
   const { data: existing } = await admin
@@ -130,6 +155,7 @@ export async function POST(
     pqc_public_key: pqcPublicKey,
     ip_address: ip,
     auth_method: "webauthn-passkey",
+    transaction_context_signature: transactionContextSignature,
   });
 
   if (insertError) return Response.json({ error: insertError.message }, { status: 500 });
@@ -154,19 +180,6 @@ export async function POST(
     // non-fatal — signing already recorded
   }
 
-  const { data: docSession } = await admin
-    .from("document_sessions")
-    .select("multi_signer, webhook_url")
-    .eq("id", sessionId)
-    .single();
-
-  if (!docSession?.multi_signer) {
-    await admin
-      .from("document_sessions")
-      .update({ status: "signed" })
-      .eq("id", sessionId);
-  }
-
   // Fire webhook (fire-and-forget, best-effort)
   if (docSession?.webhook_url) {
     fetch(docSession.webhook_url, {
@@ -183,14 +196,19 @@ export async function POST(
     }).catch(() => {});
   }
 
-  // Log signature_applied event
-  await admin.from("signing_events").insert({
-    session_id: sessionId,
-    signer_id: userId,
-    event_type: "signature_applied",
-    ip_address: ip,
-    metadata: { credential_id: passkey.id, file_name: fileName, file_path: filePath },
-  });
+  // Update session status + log event in parallel
+  await Promise.all([
+    docSession?.multi_signer
+      ? Promise.resolve()
+      : admin.from("document_sessions").update({ status: "signed" }).eq("id", sessionId),
+    admin.from("signing_events").insert({
+      session_id: sessionId,
+      signer_id: userId,
+      event_type: "signature_applied",
+      ip_address: ip,
+      metadata: { credential_id: passkey.id, file_name: fileName, file_path: filePath },
+    }),
+  ]);
 
   return Response.json({ success: true });
 }
