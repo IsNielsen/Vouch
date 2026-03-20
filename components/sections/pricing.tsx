@@ -1,71 +1,70 @@
 import Link from "next/link";
+import { SectionEyebrow } from "@/components/section-eyebrow";
 
 export function Pricing() {
   return (
-    <section className="py-24 px-6">
-      <div className="max-w-5xl mx-auto flex flex-col gap-12">
-        <h2 className="text-4xl font-bold text-center">Simple pricing</h2>
-        <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto w-full">
-          {/* Starter */}
-          <div className="flex flex-col gap-6 p-8 rounded-2xl border-2 border-primary bg-primary/5">
-            <div>
-              <p className="text-sm font-medium text-primary uppercase tracking-widest">Starter</p>
-              <p className="text-4xl font-bold mt-2">$0</p>
-              <p className="text-muted-foreground text-sm mt-1">500 verifications/month free</p>
-            </div>
-            <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
-              <li>✓ Full API access</li>
-              <li>✓ WebAuthn + ML-DSA receipts</li>
-              <li>✓ Signed receipt per verification</li>
+    <section className="bg-[#0a0a0f] py-20 md:py-28">
+      <div className="max-w-3xl mx-auto px-4 md:px-8">
+        <SectionEyebrow label="Pricing" className="mb-4" />
+
+        <h2 className="text-3xl md:text-4xl font-semibold tracking-tight text-[#f0f0fa] mb-3">
+          Simple, usage-based pricing
+        </h2>
+        <p className="text-[#8888a8] mb-12 max-w-xl leading-relaxed">
+          Start free. Pay only when you scale.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* Pilot */}
+          <div className="bg-[#111118] border border-[#1a1a2e] rounded-[10px] p-8 hover:border-[#2a2a3a] transition-colors duration-200">
+            <h3 className="text-sm font-semibold text-[#f0f0fa] mb-1">Pilot</h3>
+            <div className="text-4xl font-semibold tracking-tight text-[#f0f0fa] mt-3 mb-1">Free</div>
+            <div className="text-sm text-[#555570] mb-6">up to 1,000 verifications/month</div>
+            <ul className="space-y-3 text-sm text-[#8888a8] mb-8">
+              <li className="flex items-center gap-2"><span className="text-[#44cc88]">✓</span> Full API access</li>
+              <li className="flex items-center gap-2"><span className="text-[#44cc88]">✓</span> WebAuthn + ML-DSA receipts</li>
+              <li className="flex items-center gap-2"><span className="text-[#44cc88]">✓</span> Signed receipt per verification</li>
+              <li className="flex items-center gap-2"><span className="text-[#44cc88]">✓</span> Developer docs + support</li>
             </ul>
             <Link
               href="/early-access"
-              className="px-6 py-2 rounded-full bg-primary text-primary-foreground font-medium text-sm text-center hover:bg-accent transition-colors"
+              className="block w-full text-center bg-transparent text-[#5577ff] border border-[#3344aa] hover:border-[#5577ff] hover:bg-[#5577ff10] py-2.5 rounded-lg text-sm transition-all duration-150"
             >
-              Get Early Access
+              Request access
             </Link>
           </div>
-          {/* Pro */}
-          <div className="flex flex-col gap-6 p-8 rounded-2xl border border-border">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Pro</p>
-              <p className="text-4xl font-bold mt-2">$0.01</p>
-              <p className="text-muted-foreground text-sm mt-1">per verification</p>
+
+          {/* Growth — featured */}
+          <div className="bg-[#111118] border border-[#5577ff] rounded-[10px] p-8 relative">
+            <div className="absolute -top-3 left-6">
+              <span className="bg-[#0d1433] text-[#5577ff] border border-[#2233aa] text-[11px] px-3 py-1 rounded-full">
+                Design partner
+              </span>
             </div>
-            <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
-              <li>✓ Everything in Starter</li>
-              <li>✓ Unlimited verifications</li>
-              <li>✓ Webhook delivery</li>
-              <li>✓ Dashboard + audit log</li>
+            <h3 className="text-sm font-semibold text-[#f0f0fa] mb-1">Growth</h3>
+            <div className="text-4xl font-semibold tracking-tight text-[#f0f0fa] mt-3 mb-1">
+              $0.08
+              <span className="text-lg text-[#555570] font-normal">/verification</span>
+            </div>
+            <div className="text-sm text-[#555570] mb-6">above 1,000/month</div>
+            <ul className="space-y-3 text-sm text-[#8888a8] mb-8">
+              <li className="flex items-center gap-2"><span className="text-[#44cc88]">✓</span> Everything in Pilot</li>
+              <li className="flex items-center gap-2"><span className="text-[#44cc88]">✓</span> Unlimited verifications</li>
+              <li className="flex items-center gap-2"><span className="text-[#44cc88]">✓</span> Webhook delivery</li>
+              <li className="flex items-center gap-2"><span className="text-[#44cc88]">✓</span> Dedicated integration support</li>
             </ul>
             <Link
               href="/early-access"
-              className="px-6 py-2 rounded-full border border-primary text-primary font-medium text-sm text-center hover:bg-primary/5 transition-colors"
+              className="block w-full text-center bg-[#5577ff] hover:bg-[#3344cc] text-white py-2.5 rounded-lg text-sm font-medium transition-all duration-150 hover:-translate-y-px"
             >
-              Join Waitlist
-            </Link>
-          </div>
-          {/* Enterprise */}
-          <div className="flex flex-col gap-6 p-8 rounded-2xl border border-border">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Enterprise</p>
-              <p className="text-4xl font-bold mt-2">Custom</p>
-              <p className="text-muted-foreground text-sm mt-1">Volume discounts + SLA</p>
-            </div>
-            <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
-              <li>✓ Everything in Pro</li>
-              <li>✓ Dedicated support</li>
-              <li>✓ Custom retention policy</li>
-              <li>✓ On-prem option</li>
-            </ul>
-            <Link
-              href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "hello@vouch.so"}`}
-              className="px-6 py-2 rounded-full border border-primary text-primary font-medium text-sm text-center hover:bg-primary/5 transition-colors"
-            >
-              Contact Us
+              Request access
             </Link>
           </div>
         </div>
+
+        <p className="text-center text-xs text-[#444466] mt-5">
+          Significantly cheaper than SMS OTP at scale. No per-seat pricing.
+        </p>
       </div>
     </section>
   );

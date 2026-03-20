@@ -6,20 +6,27 @@ const industries = [
   { emoji: "🛒", title: "Buy now, pay later", body: "Verify user presence at checkout to reduce first-party fraud and chargebacks." },
 ];
 
+import { SectionEyebrow } from "@/components/section-eyebrow";
+
 export function WhoItsFor() {
   return (
-    <section className="py-24 px-6 bg-muted/20">
-      <div className="max-w-5xl mx-auto flex flex-col gap-12">
-        <h2 className="text-4xl font-bold text-center">Who it&apos;s for</h2>
-        <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+    <section className="bg-[#0a0a0f] py-20 md:py-28">
+      <div className="max-w-7xl mx-auto px-4 md:px-8">
+        <SectionEyebrow label="Who it's for" className="mb-4" />
+
+        <h2 className="text-3xl md:text-4xl font-semibold tracking-tight text-[#f0f0fa] mb-12">
+          Built for fintech teams
+        </h2>
+
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5">
           {industries.map(({ emoji, title, body }) => (
             <div
               key={title}
-              className="flex flex-col gap-3 p-6 rounded-xl border border-border bg-background text-center"
+              className="flex flex-col gap-3 p-6 rounded-[10px] border border-[#1a1a2e] bg-[#111118] text-center hover:border-[#2a2a3a] transition-colors duration-200"
             >
-              <span className="text-4xl">{emoji}</span>
-              <h3 className="font-semibold">{title}</h3>
-              <p className="text-muted-foreground text-sm">{body}</p>
+              <span className="text-3xl">{emoji}</span>
+              <h3 className="font-semibold text-sm text-[#f0f0fa]">{title}</h3>
+              <p className="text-[#8888a8] text-xs leading-relaxed">{body}</p>
             </div>
           ))}
         </div>

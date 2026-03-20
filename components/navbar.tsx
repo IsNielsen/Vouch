@@ -4,12 +4,11 @@ import { Suspense } from "react";
 import vouchLogo from "@/app/vouchLogo.png";
 import { createClient } from "@/lib/supabase/server";
 import { AuthButton } from "./auth-button";
-import { ThemeSwitcher } from "./theme-switcher";
 import { hasEnvVars } from "@/lib/utils";
 import { EnvVarWarning } from "./env-var-warning";
 import { MobileMenu } from "./mobile-menu";
 
-async function NavLinks() {
+async function AuthNavLinks() {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims;
@@ -17,37 +16,37 @@ async function NavLinks() {
   if (!user) return null;
 
   return (
-    <div className="flex flex-col md:flex-row items-start md:items-center gap-4 text-lg font-medium">
-      <Link href="/protected/upload" className="hover:underline">
+    <>
+      <Link href="/protected/upload" className="text-sm text-[#8888a8] hover:text-[#f0f0fa] transition-colors duration-150">
         Upload
       </Link>
-      <Link href="/protected/signed" className="hover:underline">
+      <Link href="/protected/signed" className="text-sm text-[#8888a8] hover:text-[#f0f0fa] transition-colors duration-150">
         My Documents
       </Link>
-    </div>
+    </>
   );
 }
 
 export function Navbar() {
   return (
-    <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16 relative">
-      <div className="w-full max-w-5xl flex justify-between items-center p-3 px-5 text-xl">
-        <div className="flex gap-5 items-center font-semibold">
-          <Link href="/" className="flex items-center gap-2">
-            <Image src={vouchLogo} alt="Vouch logo" width={64} height={64} className="brightness-0 dark:invert" />
+    <nav className="w-full flex justify-center border-b border-[#1a1a2e] h-16 relative bg-[#0a0a0f] z-40">
+      <div className="w-full max-w-7xl flex justify-between items-center px-4 md:px-8">
+        <div className="flex items-center gap-6">
+          <Link href="/" className="flex items-center gap-2 text-[#f0f0fa] font-semibold text-lg">
+            <Image src={vouchLogo} alt="Vouch logo" width={28} height={28} className="invert" />
             Vouch
           </Link>
-          {/* Desktop nav links */}
-          <div className="hidden md:flex">
+          <div className="hidden md:flex items-center gap-5">
+            <Link href="/demo" className="text-sm text-[#8888a8] hover:text-[#f0f0fa] transition-colors duration-150">
+              Demo
+            </Link>
             <Suspense>
-              <NavLinks />
+              <AuthNavLinks />
             </Suspense>
           </div>
         </div>
 
-        {/* Desktop right side */}
         <div className="hidden md:flex items-center gap-3">
-          <ThemeSwitcher />
           {!hasEnvVars ? (
             <EnvVarWarning />
           ) : (
@@ -55,14 +54,20 @@ export function Navbar() {
               <AuthButton />
             </Suspense>
           )}
+          <Link
+            href="/early-access"
+            className="bg-[#5577ff] hover:bg-[#3344cc] text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-150 hover:-translate-y-px"
+          >
+            Early Access
+          </Link>
         </div>
 
-        {/* Mobile: theme switcher + hamburger */}
         <div className="flex md:hidden items-center gap-2">
-          <ThemeSwitcher />
           <MobileMenu>
+            <Link href="/demo" className="text-sm text-[#8888a8]">Demo</Link>
+            <Link href="/early-access" className="text-sm text-[#5577ff]">Early Access</Link>
             <Suspense>
-              <NavLinks />
+              <AuthNavLinks />
             </Suspense>
             {!hasEnvVars ? (
               <EnvVarWarning />

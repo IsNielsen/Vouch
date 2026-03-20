@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { startAuthentication } from "@simplewebauthn/browser";
 import { Button } from "@/components/ui/button";
 import { Loader2, Copy, Check, ArrowRight, ShieldCheck, Fingerprint } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { SectionEyebrow } from "@/components/section-eyebrow";
 import Prism from "prismjs";
 import "prismjs/components/prism-typescript";
 import "prismjs/components/prism-bash";
@@ -120,9 +121,9 @@ const ACCOUNTS = [
 ];
 
 const RECIPIENTS = [
-  { name: "James Chen", bank: "Chase", initials: "JC", color: "bg-blue-100 text-blue-700" },
-  { name: "Maria Lopez", bank: "Wells Fargo", initials: "ML", color: "bg-purple-100 text-purple-700" },
-  { name: "David Park", bank: "Bank of America", initials: "DP", color: "bg-green-100 text-green-700" },
+  { name: "James Chen", bank: "Chase", initials: "JC" },
+  { name: "Maria Lopez", bank: "Wells Fargo", initials: "ML" },
+  { name: "David Park", bank: "Bank of America", initials: "DP" },
 ];
 
 export default function DemoPage() {
@@ -135,6 +136,10 @@ export default function DemoPage() {
   const [selectedRecipient, setSelectedRecipient] = useState(0);
   const [selectedAccount, setSelectedAccount] = useState(0);
   const [note, setNote] = useState("Rent - March 2026");
+
+  const highlightedCode = useMemo(() => highlight(CODE[tab], tab), [tab]);
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current); }, []);
 
   async function handleVerify() {
     setStatus("loading");
@@ -178,18 +183,19 @@ export default function DemoPage() {
   function handleCopy() {
     navigator.clipboard.writeText(CODE[tab]);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    copyTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
   }
 
   const recipient = RECIPIENTS[selectedRecipient];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#0a0a0f]">
       {/* Back link */}
       <div className="flex justify-end px-8 pt-4">
         <Link
           href="/"
-          className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+          className="text-xs text-[#555570] hover:text-[#8888a8] transition-colors duration-150"
         >
           ← Back
         </Link>
@@ -197,37 +203,35 @@ export default function DemoPage() {
 
       {/* Page header */}
       <div className="text-center pt-8 pb-10 px-4">
-        <span className="inline-block border text-xs font-medium px-3 py-1 rounded-full bg-white mb-4 text-muted-foreground">
-          API Documentation
-        </span>
-        <h1 className="text-4xl font-bold tracking-tight mb-3">API Integration Demo</h1>
-        <p className="text-muted-foreground text-base">
+        <SectionEyebrow label="API Documentation" center className="mb-4" />
+        <h1 className="text-4xl font-semibold tracking-tight text-[#f0f0fa] mb-3">API integration demo</h1>
+        <p className="text-[#8888a8] text-base">
           Complete example with code, live widget, and response viewer
         </p>
       </div>
 
       {/* Two-column layout */}
-      <div className="max-w-6xl mx-auto px-6 pb-16 grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6 items-start">
+      <div className="max-w-6xl mx-auto px-6 pb-16 grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-5 items-start">
         {/* Left: Code examples */}
-        <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+        <div className="bg-[#111118] rounded-[10px] border border-[#1a1a2e] overflow-hidden">
           <div className="px-5 pt-5 pb-3">
-            <h2 className="font-semibold text-base">Code Examples</h2>
-            <p className="text-sm text-muted-foreground">
+            <h2 className="font-semibold text-sm text-[#f0f0fa]">Code examples</h2>
+            <p className="text-xs text-[#8888a8] mt-0.5">
               Choose your preferred language or framework
             </p>
           </div>
 
           <div className="px-5 pb-3">
-            <div className="inline-flex bg-gray-100 rounded-lg p-1 gap-1">
+            <div className="inline-flex bg-[#16161f] border border-[#1a1a2e] rounded-lg p-1 gap-1">
               {TABS.map((t) => (
                 <button
                   key={t}
                   onClick={() => setTab(t)}
                   className={cn(
-                    "px-4 py-1.5 rounded-md text-sm font-medium transition-colors",
+                    "px-4 py-1.5 rounded-md text-xs font-medium transition-colors duration-150",
                     tab === t
-                      ? "bg-white shadow-sm text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
+                      ? "bg-[#5577ff] text-white"
+                      : "text-[#8888a8] hover:text-[#f0f0fa]"
                   )}
                 >
                   {t}
@@ -236,10 +240,10 @@ export default function DemoPage() {
             </div>
           </div>
 
-          <div className="relative mx-5 mb-5 rounded-lg overflow-hidden" style={{ background: "#1e1e2e" }}>
+          <div className="relative mx-5 mb-5 rounded-lg overflow-hidden border border-[#1a1a2e] border-l-2 border-l-[#5577ff]" style={{ background: "#080810" }}>
             <button
               onClick={handleCopy}
-              className="absolute top-3 right-3 p-1.5 rounded text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+              className="absolute top-3 right-3 p-1.5 rounded text-[#555570] hover:text-[#f0f0fa] hover:bg-[#ffffff10] transition-colors duration-150"
               title="Copy"
             >
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
@@ -247,7 +251,7 @@ export default function DemoPage() {
             <pre
               className="overflow-auto p-5 text-[13px] font-mono leading-relaxed"
               style={{ color: "#cdd6f4", minHeight: 320 }}
-              dangerouslySetInnerHTML={{ __html: highlight(CODE[tab], tab) }}
+              dangerouslySetInnerHTML={{ __html: highlightedCode }}
             />
           </div>
         </div>
@@ -255,30 +259,30 @@ export default function DemoPage() {
         {/* Right column */}
         <div className="flex flex-col gap-5">
           {/* Transfer widget */}
-          <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+          <div className="bg-[#111118] rounded-[10px] border border-[#1a1a2e] overflow-hidden">
             {/* Bank header */}
-            <div className="bg-gradient-to-r from-slate-800 to-slate-700 px-5 py-4 flex items-center justify-between">
+            <div className="bg-[#16161f] border-b border-[#1a1a2e] px-5 py-4 flex items-center justify-between">
               <div>
-                <p className="text-slate-400 text-xs">NorthBank</p>
-                <p className="text-white font-semibold text-sm">Send Money</p>
+                <p className="text-[#555570] text-xs">NorthBank</p>
+                <p className="text-[#f0f0fa] font-semibold text-sm">Send money</p>
               </div>
-              <ShieldCheck className="h-5 w-5 text-slate-400" />
+              <ShieldCheck className="h-5 w-5 text-[#5577ff]" />
             </div>
 
             <div className="p-5 space-y-4">
               {/* From account */}
               <div>
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">From</label>
+                <label className="text-[11px] font-medium text-[#444466] uppercase tracking-widest">From</label>
                 <div className="mt-1 flex gap-2">
                   {ACCOUNTS.map((a, i) => (
                     <button
                       key={a.value}
                       onClick={() => setSelectedAccount(i)}
                       className={cn(
-                        "flex-1 text-sm py-2 px-3 rounded-lg border transition-colors text-left",
+                        "flex-1 text-xs py-2 px-3 rounded-lg border transition-colors duration-150 text-left",
                         selectedAccount === i
-                          ? "border-slate-800 bg-slate-50 font-medium"
-                          : "border-gray-200 text-muted-foreground hover:border-gray-300"
+                          ? "border-[#5577ff] bg-[#0d1433] text-[#f0f0fa] font-medium"
+                          : "border-[#1a1a2e] text-[#8888a8] hover:border-[#2a2a3a]"
                       )}
                     >
                       {a.label}
@@ -289,43 +293,43 @@ export default function DemoPage() {
 
               {/* Amount */}
               <div>
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Amount</label>
+                <label className="text-[11px] font-medium text-[#444466] uppercase tracking-widest">Amount</label>
                 <div className="mt-1 relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8888a8] font-medium text-sm">$</span>
                   <input
                     type="text"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="w-full border rounded-lg pl-7 pr-12 py-2.5 text-xl font-semibold focus:outline-none focus:ring-2 focus:ring-slate-800/20 focus:border-slate-800"
+                    className="w-full bg-[#16161f] border border-[#1a1a2e] rounded-lg pl-7 pr-12 py-2.5 text-xl font-semibold text-[#f0f0fa] focus:outline-hidden focus:ring-2 focus:ring-[#5577ff]/50 focus:border-[#5577ff] transition-colors duration-150"
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">USD</span>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#555570]">USD</span>
                 </div>
               </div>
 
               {/* To */}
               <div>
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">To</label>
+                <label className="text-[11px] font-medium text-[#444466] uppercase tracking-widest">To</label>
                 <div className="mt-1 space-y-2">
                   {RECIPIENTS.map((r, i) => (
                     <button
                       key={r.name}
                       onClick={() => setSelectedRecipient(i)}
                       className={cn(
-                        "w-full flex items-center gap-3 p-3 rounded-lg border transition-colors text-left",
+                        "w-full flex items-center gap-3 p-3 rounded-lg border transition-colors duration-150 text-left",
                         selectedRecipient === i
-                          ? "border-slate-800 bg-slate-50"
-                          : "border-gray-200 hover:border-gray-300"
+                          ? "border-[#5577ff] bg-[#0d1433]"
+                          : "border-[#1a1a2e] hover:border-[#2a2a3a]"
                       )}
                     >
-                      <span className={cn("w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0", r.color)}>
+                      <span className="w-8 h-8 rounded-full bg-[#16161f] border border-[#2233aa] flex items-center justify-center text-xs font-bold text-[#5577ff] shrink-0">
                         {r.initials}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium">{r.name}</p>
-                        <p className="text-xs text-muted-foreground">{r.bank}</p>
+                        <p className="text-sm font-medium text-[#f0f0fa]">{r.name}</p>
+                        <p className="text-xs text-[#555570]">{r.bank}</p>
                       </div>
                       {selectedRecipient === i && (
-                        <Check className="h-4 w-4 text-slate-700 shrink-0" />
+                        <Check className="h-4 w-4 text-[#5577ff] shrink-0" />
                       )}
                     </button>
                   ))}
@@ -334,31 +338,31 @@ export default function DemoPage() {
 
               {/* Note */}
               <div>
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Note (optional)</label>
+                <label className="text-[11px] font-medium text-[#444466] uppercase tracking-widest">Note (optional)</label>
                 <input
                   type="text"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  className="mt-1 w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-800/20 focus:border-slate-800"
+                  className="mt-1 w-full bg-[#16161f] border border-[#1a1a2e] rounded-lg px-3 py-2 text-sm text-[#f0f0fa] focus:outline-hidden focus:ring-2 focus:ring-[#5577ff]/50 focus:border-[#5577ff] transition-colors duration-150"
                 />
               </div>
 
               {/* Summary */}
-              <div className="rounded-lg bg-gray-50 border px-4 py-3 flex items-center gap-3 text-sm">
-                <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0", recipient.color)}>
+              <div className="rounded-lg bg-[#16161f] border border-[#1a1a2e] px-4 py-3 flex items-center gap-3 text-sm">
+                <div className="w-8 h-8 rounded-full bg-[#0d1433] border border-[#2233aa] flex items-center justify-center text-xs font-bold text-[#5577ff] shrink-0">
                   {recipient.initials}
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium">{recipient.name}</p>
-                  <p className="text-xs text-muted-foreground">{recipient.bank}</p>
+                  <p className="font-medium text-[#f0f0fa]">{recipient.name}</p>
+                  <p className="text-xs text-[#555570]">{recipient.bank}</p>
                 </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                <p className="font-bold text-base">${amount}</p>
+                <ArrowRight className="h-4 w-4 text-[#555570] shrink-0" />
+                <p className="font-bold text-base text-[#f0f0fa]">${amount}</p>
               </div>
 
               {/* Verify button */}
               <Button
-                className="w-full gap-2 bg-slate-800 hover:bg-slate-700"
+                className="w-full gap-2 bg-[#5577ff] hover:bg-[#3344cc] text-white border-0 transition-all duration-150 hover:-translate-y-px"
                 size="lg"
                 onClick={handleVerify}
                 disabled={status === "loading"}
@@ -377,54 +381,55 @@ export default function DemoPage() {
               </Button>
 
               {status === "no-passkey" && (
-                <p className="text-xs text-muted-foreground text-center">
+                <p className="text-xs text-[#8888a8] text-center">
                   No passkey found.{" "}
-                  <Link href="/auth/login" className="underline">
+                  <Link href="/auth/login" className="text-[#5577ff] underline">
                     Register one first.
                   </Link>
                 </p>
               )}
               {status === "error" && (
-                <p className="text-xs text-destructive text-center">{error}</p>
+                <p className="text-xs text-red-400 text-center">{error}</p>
               )}
             </div>
           </div>
 
           {/* API Response */}
-          <div className="bg-white rounded-xl border shadow-sm p-5">
+          <div className="bg-[#111118] rounded-[10px] border border-[#1a1a2e] p-5">
             <div className="flex items-center gap-2 mb-0.5">
-              <h2 className="font-semibold text-base">Vouch Receipt</h2>
+              <h2 className="font-semibold text-sm text-[#f0f0fa]">Vouch receipt</h2>
               {status === "success" && (
-                <span className="text-xs text-green-600 font-medium bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">
-                  ● Verified
+                <span className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-0.5 rounded-full bg-[#0a1a10] text-[#44cc88] border border-[#1a5533]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#44cc88]" />
+                  Verified
                 </span>
               )}
             </div>
-            <p className="text-sm text-muted-foreground mb-3">
+            <p className="text-xs text-[#555570] mb-3">
               PQC-signed proof of biometric authorization
             </p>
 
             <div
-              className="border-2 border-dashed border-gray-200 rounded-lg overflow-auto"
-              style={{ minHeight: 120, background: "#fafafa" }}
+              className="border border-[#1a1a2e] border-l-2 border-l-[#5577ff] rounded-lg overflow-auto bg-[#080810]"
+              style={{ minHeight: 120 }}
             >
               {(status === "idle" || status === "no-passkey") && (
-                <p className="text-sm text-muted-foreground/50 h-28 flex items-center justify-center">
+                <p className="text-xs text-[#444466] h-28 flex items-center justify-center font-mono">
                   No receipt yet
                 </p>
               )}
               {status === "loading" && (
-                <p className="text-sm text-muted-foreground/50 h-28 flex items-center justify-center">
+                <p className="text-xs text-[#555570] h-28 flex items-center justify-center font-mono">
                   Awaiting verification…
                 </p>
               )}
               {status === "success" && (
-                <pre className="p-4 text-xs font-mono leading-relaxed text-green-700 overflow-auto">
+                <pre className="p-4 text-xs font-mono leading-relaxed text-[#44cc88] overflow-auto">
                   {response}
                 </pre>
               )}
               {status === "error" && (
-                <pre className="p-4 text-xs font-mono leading-relaxed text-destructive">
+                <pre className="p-4 text-xs font-mono leading-relaxed text-red-400">
                   Error: {error}
                 </pre>
               )}

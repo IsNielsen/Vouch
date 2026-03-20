@@ -25,23 +25,26 @@ const faqs = [
   },
 ];
 
+import { SectionEyebrow } from "@/components/section-eyebrow";
+
 export function Faq() {
   return (
-    <section className="py-24 px-6 bg-muted/20">
-      <div className="max-w-3xl mx-auto flex flex-col gap-10">
-        <h2 className="text-4xl font-bold text-center">
+    <section className="bg-[#111118] py-20 md:py-28">
+      <div className="max-w-3xl mx-auto px-4 md:px-8">
+        <SectionEyebrow label="FAQ" className="mb-4" />
+
+        <h2 className="text-3xl md:text-4xl font-semibold tracking-tight text-[#f0f0fa] mb-12">
           Frequently asked questions
         </h2>
-        <div className="flex flex-col divide-y divide-border">
+
+        <div className="flex flex-col gap-2">
           {faqs.map(({ q, a }) => (
-            <details key={q} className="py-5 group">
-              <summary className="cursor-pointer font-semibold text-lg list-none flex items-center justify-between gap-4">
+            <details key={q} className="group bg-[#16161f] border border-[#1a1a2e] rounded-[10px] px-5 open:border-[#2a2a3a]">
+              <summary className="cursor-pointer font-medium text-sm text-[#f0f0fa] hover:text-[#5577ff] list-none flex items-center justify-between gap-4 py-4 transition-colors duration-150">
                 {q}
-                <span className="text-primary text-xl group-open:rotate-45 transition-transform">
-                  +
-                </span>
+                <span className="text-[#5577ff] text-lg shrink-0 group-open:rotate-45 transition-transform duration-150">+</span>
               </summary>
-              <p className="mt-3 text-muted-foreground leading-relaxed">{a}</p>
+              <p className="text-sm text-[#8888a8] leading-relaxed pb-4">{a}</p>
             </details>
           ))}
         </div>

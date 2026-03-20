@@ -10,11 +10,11 @@ export async function SignatureCount() {
   const count = Number(data?.total_signatures ?? 0).toLocaleString();
 
   return (
-    <section className="py-10 px-6 border-b border-border text-center">
-      <p className="text-muted-foreground text-sm uppercase tracking-widest mb-1">
+    <section className="bg-[#0a0a0f] py-10 border-b border-[#1a1a2e] text-center">
+      <p className="text-[11px] uppercase tracking-widest text-[#444466] mb-2">
         Verifications vouched for
       </p>
-      <p className="text-5xl font-bold tabular-nums">{count}</p>
+      <p className="text-5xl font-semibold tabular-nums text-[#f0f0fa]">{count}</p>
     </section>
   );
 }

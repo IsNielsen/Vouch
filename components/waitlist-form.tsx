@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { joinWaitlist } from "@/app/actions/waitlist";
 
-const inputCls = "flex-1 px-4 py-2.5 rounded-lg border border-foreground/20 bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20";
+const inputCls = "w-full px-4 py-2.5 rounded-lg border border-[#1a1a2e] bg-[#111118] text-[#f0f0fa] placeholder:text-[#555570] focus:outline-hidden focus:ring-2 focus:ring-[#5577ff]/50 focus:border-[#5577ff] transition-colors duration-150 text-sm";
 
 export function WaitlistForm() {
   const [email, setEmail] = useState("");
@@ -29,7 +29,9 @@ export function WaitlistForm() {
   }
 
   if (status === "success") {
-    return <p className="text-green-600 dark:text-green-400 font-medium">{message}</p>;
+    return (
+      <p className="text-[#44cc88] font-medium text-sm">{message}</p>
+    );
   }
 
   return (
@@ -60,13 +62,13 @@ export function WaitlistForm() {
         <button
           type="submit"
           disabled={status === "loading"}
-          className="px-6 py-2.5 rounded-lg bg-foreground text-background font-medium hover:bg-foreground/90 transition-colors disabled:opacity-50 whitespace-nowrap cursor-pointer"
+          className="px-6 py-2.5 rounded-lg bg-[#5577ff] hover:bg-[#3344cc] text-white font-medium text-sm transition-all duration-150 hover:-translate-y-px disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
-          {status === "loading" ? "Joining..." : "Join the Waitlist"}
+          {status === "loading" ? "Joining..." : "Join the waitlist"}
         </button>
       </form>
       {status === "error" && (
-        <p className="text-sm text-red-500">{message}</p>
+        <p className="text-sm text-red-400">{message}</p>
       )}
     </div>
   );

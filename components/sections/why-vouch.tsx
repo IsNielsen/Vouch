@@ -1,44 +1,62 @@
-import { Fingerprint, ShieldCheck, EyeOff, Code2 } from "lucide-react";
+import { SectionEyebrow } from "@/components/section-eyebrow";
 
 const features = [
   {
-    icon: Fingerprint,
-    title: "WebAuthn biometric verification",
-    body: "Users authenticate with Face ID or fingerprint on their own device — phishing-resistant by design, no shared secret to steal.",
+    title: "Not phishable by design",
+    body: "WebAuthn assertions are cryptographically bound to your exact domain. A fake site gets a useless assertion that fails verification.",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5577ff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      </svg>
+    ),
   },
   {
-    icon: ShieldCheck,
-    title: "ML-DSA post-quantum receipts",
-    body: "Every verification returns a NIST FIPS 204 ML-DSA signature over the transaction context — cryptographic proof that survives quantum computing.",
+    title: "Post-quantum signed receipts",
+    body: "Every verification produces an ML-DSA signature — NIST FIPS 204 standardized, quantum-resistant — giving you immutable proof that survives cryptanalytic advances.",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5577ff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+      </svg>
+    ),
   },
   {
-    icon: EyeOff,
     title: "Zero PII on Vouch servers",
-    body: "No biometric data, no passwords, no credentials are stored. Nothing for an attacker to breach. Nothing for regulators to flag.",
-  },
-  {
-    icon: Code2,
-    title: "REST API — two endpoints",
-    body: "POST /challenge to start, POST /verify to complete. Add biometric fraud prevention to any flow in an afternoon.",
+    body: "Biometric verification happens in the device's secure enclave. No biometric data, no passwords, no credentials ever reach Vouch. Nothing to breach.",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5577ff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+        <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+        <line x1="1" y1="1" x2="23" y2="23" />
+      </svg>
+    ),
   },
 ];
 
 export function WhyVouch() {
   return (
-    <section className="py-24 px-6 bg-muted/20">
-      <div className="max-w-5xl mx-auto flex flex-col gap-12">
-        <h2 className="text-4xl font-bold text-center">
-          Why Vouch?
+    <section className="bg-[#111118] py-20 md:py-28">
+      <div className="max-w-7xl mx-auto px-4 md:px-8">
+        <SectionEyebrow label="Why Vouch" className="mb-4" />
+
+        <h2 className="text-3xl md:text-4xl font-semibold tracking-tight text-[#f0f0fa] mb-3">
+          Built for the attacks that are happening now
         </h2>
-        <div className="grid sm:grid-cols-2 gap-6">
-          {features.map(({ icon: Icon, title, body }) => (
+        <p className="text-[#8888a8] mb-12 max-w-xl leading-relaxed">
+          Designed around the threat model, not the convenience model.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {features.map(({ title, body, icon }) => (
             <div
               key={title}
-              className="flex flex-col gap-3 p-6 rounded-xl border border-border bg-background"
+              className="bg-[#16161f] border border-[#1a1a2e] rounded-[10px] p-6 hover:border-[#2a2a3a] transition-colors duration-200"
             >
-              <Icon className="w-8 h-8 text-primary" />
-              <h3 className="font-semibold text-lg">{title}</h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">{body}</p>
+              <div className="w-10 h-10 rounded-lg bg-[#0d1433] border border-[#2233aa] flex items-center justify-center mb-4">
+                {icon}
+              </div>
+              <h3 className="text-sm font-semibold text-[#f0f0fa] mb-2">{title}</h3>
+              <p className="text-sm text-[#8888a8] leading-relaxed">{body}</p>
             </div>
           ))}
         </div>
