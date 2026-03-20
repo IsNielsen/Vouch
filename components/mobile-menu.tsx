@@ -16,7 +16,7 @@ export function MobileMenu({ children }: { children: React.ReactNode }) {
         {open ? <X size={24} /> : <Menu size={24} />}
       </button>
       {open && (
-        <div className="absolute top-16 left-0 right-0 bg-background border-b border-foreground/10 px-5 py-4 flex flex-col gap-4 z-50">
+        <div className="absolute top-16 left-0 right-0 bg-[#0a0a0f] border-b border-[#1a1a2e] px-5 py-4 flex flex-col gap-4 z-50">
           {children}
         </div>
       )}
