@@ -1,5 +1,6 @@
 export async function POST(req: Request) {
   const origin = req.headers.get("origin") ?? new URL(req.url).origin;
+  const body = await req.json().catch(() => ({}));
 
   const res = await fetch(`${origin}/api/vouch/challenge`, {
     method: "POST",
@@ -8,7 +9,7 @@ export async function POST(req: Request) {
       Authorization: `Bearer ${process.env.VOUCH_API_KEY}`,
     },
     body: JSON.stringify({
-      transaction_context: {
+      transaction_context: body.transaction_context ?? {
         amount: 2500,
         currency: "USD",
         recipient: "James Chen",
