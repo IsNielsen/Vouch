@@ -1,22 +1,33 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
-import { startAuthentication } from "@simplewebauthn/browser";
-import { Button } from "@/components/ui/button";
-import { Loader2, Copy, Check, ArrowRight, ShieldCheck, Fingerprint } from "lucide-react";
+import { Copy, Check, ArrowRight, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { SectionEyebrow } from "@/components/section-eyebrow";
+import { VouchButton, VouchReceipt } from "@/components/vouch-button";
 import Prism from "prismjs";
 import "prismjs/components/prism-typescript";
 import "prismjs/components/prism-bash";
 import "prismjs/components/prism-python";
 import "prismjs/themes/prism-tomorrow.css";
 
-const TABS = ["TypeScript", "cURL", "Python"] as const;
+const TABS = ["React", "TypeScript", "cURL", "Python"] as const;
 type Tab = (typeof TABS)[number];
 
 const CODE: Record<Tab, string> = {
+  React: `import { VouchButton } from "@vouch/react";
+
+<VouchButton
+  transactionContext={{
+    amount: 2500,
+    currency: "USD",
+    recipient: "James Chen",
+    account_last4: "4821",
+  }}
+  onVerified={(receipt) => console.log(receipt.pqc_signature)}
+/>`,
+
   TypeScript: `import Vouch, {
   Challenge,
   VouchReceipt,
@@ -103,6 +114,7 @@ print(receipt.pqc_signature)  # ML-DSA-65 (FIPS 204)`,
 };
 
 const PRISM_LANG: Record<Tab, string> = {
+  React: "typescript",
   TypeScript: "typescript",
   cURL: "bash",
   Python: "python",
@@ -112,8 +124,6 @@ function highlight(code: string, tab: Tab): string {
   const lang = PRISM_LANG[tab];
   return Prism.highlight(code, Prism.languages[lang], lang);
 }
-
-type RunStatus = "idle" | "loading" | "success" | "no-passkey" | "error";
 
 const ACCOUNTS = [
   { label: "Checking ••4821", value: "4821" },
@@ -127,9 +137,7 @@ const RECIPIENTS = [
 ];
 
 export default function DemoPage() {
-  const [tab, setTab] = useState<Tab>("TypeScript");
-  const [status, setStatus] = useState<RunStatus>("idle");
-  const [error, setError] = useState("");
+  const [tab, setTab] = useState<Tab>("React");
   const [response, setResponse] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [amount, setAmount] = useState("2,500.00");
@@ -141,50 +149,23 @@ export default function DemoPage() {
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current); }, []);
 
-  async function handleVerify() {
-    setStatus("loading");
-    setError("");
-    setResponse(null);
-
-    try {
-      const challengeRes = await fetch("/api/demo/challenge", { method: "POST" });
-      const { challenge_id, webauthn_options, error: challengeErr } =
-        await challengeRes.json();
-      if (challengeErr) throw new Error(challengeErr);
-
-      let assertion;
-      try {
-        assertion = await startAuthentication({ optionsJSON: webauthn_options });
-      } catch (e: unknown) {
-        const name = e instanceof Error ? e.name : "";
-        if (name === "NotAllowedError" || name === "NotSupportedError") {
-          setStatus("no-passkey");
-          return;
-        }
-        throw e;
-      }
-
-      const verifyRes = await fetch(`/api/demo/verify/${challenge_id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ assertion }),
-      });
-      const result = await verifyRes.json();
-      if (!verifyRes.ok) throw new Error(result.error);
-
-      setResponse(JSON.stringify(result, null, 2));
-      setStatus("success");
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Something went wrong");
-      setStatus("error");
-    }
-  }
+  const tx = useMemo(() => ({
+    amount: parseFloat(amount.replace(/,/g, "")),
+    currency: "USD",
+    recipient: RECIPIENTS[selectedRecipient].name,
+    account_last4: ACCOUNTS[selectedAccount].value,
+    note,
+  }), [amount, selectedRecipient, selectedAccount, note]);
 
   function handleCopy() {
     navigator.clipboard.writeText(CODE[tab]);
     setCopied(true);
     if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
     copyTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
+  }
+
+  function handleVerified(receipt: VouchReceipt) {
+    setResponse(JSON.stringify(receipt, null, 2));
   }
 
   const recipient = RECIPIENTS[selectedRecipient];
@@ -360,37 +341,10 @@ export default function DemoPage() {
                 <p className="font-bold text-base text-[#f0f0fa]">${amount}</p>
               </div>
 
-              {/* Verify button */}
-              <Button
-                className="w-full gap-2 bg-[#5577ff] hover:bg-[#3344cc] text-white border-0 transition-all duration-150 hover:-translate-y-px"
-                size="lg"
-                onClick={handleVerify}
-                disabled={status === "loading"}
-              >
-                {status === "loading" ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Waiting for biometric…
-                  </>
-                ) : (
-                  <>
-                    <Fingerprint className="h-4 w-4" />
-                    Verify &amp; Send
-                  </>
-                )}
-              </Button>
-
-              {status === "no-passkey" && (
-                <p className="text-xs text-[#8888a8] text-center">
-                  No passkey found.{" "}
-                  <Link href="/auth/login" className="text-[#5577ff] underline">
-                    Register one first.
-                  </Link>
-                </p>
-              )}
-              {status === "error" && (
-                <p className="text-xs text-red-400 text-center">{error}</p>
-              )}
+              <VouchButton
+                transactionContext={tx}
+                onVerified={handleVerified}
+              />
             </div>
           </div>
 
@@ -398,7 +352,7 @@ export default function DemoPage() {
           <div className="bg-[#111118] rounded-[10px] border border-[#1a1a2e] p-5">
             <div className="flex items-center gap-2 mb-0.5">
               <h2 className="font-semibold text-sm text-[#f0f0fa]">Vouch receipt</h2>
-              {status === "success" && (
+              {response !== null && (
                 <span className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-0.5 rounded-full bg-[#0a1a10] text-[#44cc88] border border-[#1a5533]">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#44cc88]" />
                   Verified
@@ -413,24 +367,13 @@ export default function DemoPage() {
               className="border border-[#1a1a2e] border-l-2 border-l-[#5577ff] rounded-lg overflow-auto bg-[#080810]"
               style={{ minHeight: 120 }}
             >
-              {(status === "idle" || status === "no-passkey") && (
+              {response === null ? (
                 <p className="text-xs text-[#444466] h-28 flex items-center justify-center font-mono">
                   No receipt yet
                 </p>
-              )}
-              {status === "loading" && (
-                <p className="text-xs text-[#555570] h-28 flex items-center justify-center font-mono">
-                  Awaiting verification…
-                </p>
-              )}
-              {status === "success" && (
+              ) : (
                 <pre className="p-4 text-xs font-mono leading-relaxed text-[#44cc88] overflow-auto">
                   {response}
-                </pre>
-              )}
-              {status === "error" && (
-                <pre className="p-4 text-xs font-mono leading-relaxed text-red-400">
-                  Error: {error}
                 </pre>
               )}
             </div>

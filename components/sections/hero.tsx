@@ -67,19 +67,19 @@ export function Hero() {
               </div>
               <div className="mt-2 text-[#8888aa]">{"{"}</div>
               <div className="pl-4">
-                <span className="text-[#8888aa]">"transaction_context"</span>
+                <span className="text-[#8888aa]">{'"transaction_context"'}</span>
                 <span className="text-[#444466]">: {"{"}</span>
               </div>
               <div className="pl-8">
-                <span className="text-[#8888aa]">"amount"</span>
+                <span className="text-[#8888aa]">{'"amount"'}</span>
                 <span className="text-[#444466]">: </span>
                 <span className="text-[#44cc88]">2500</span>
                 <span className="text-[#444466]">,</span>
               </div>
               <div className="pl-8">
-                <span className="text-[#8888aa]">"recipient"</span>
+                <span className="text-[#8888aa]">{'"recipient"'}</span>
                 <span className="text-[#444466]">: </span>
-                <span className="text-[#88bbff]">"James Chen"</span>
+                <span className="text-[#88bbff]">{'"James Chen"'}</span>
               </div>
               <div className="pl-4 text-[#444466]">{"}"}</div>
               <div className="text-[#8888aa]">{"}"}</div>
@@ -87,15 +87,15 @@ export function Hero() {
               <div className="text-[#444466] italic mt-4 mb-2">{"// Response — verified receipt"}</div>
               <div className="text-[#8888aa]">{"{"}</div>
               <div className="pl-4">
-                <span className="text-[#8888aa]">"verified"</span>
+                <span className="text-[#8888aa]">{'"verified"'}</span>
                 <span className="text-[#444466]">: </span>
                 <span className="text-[#44cc88]">true</span>
                 <span className="text-[#444466]">,</span>
               </div>
               <div className="pl-4">
-                <span className="text-[#8888aa]">"pqc_signature"</span>
+                <span className="text-[#8888aa]">{'"pqc_signature"'}</span>
                 <span className="text-[#444466]">: </span>
-                <span className="text-[#88bbff]">"ML-DSA-65..."</span>
+                <span className="text-[#88bbff]">{'"ML-DSA-65..."'}</span>
               </div>
               <div className="text-[#8888aa]">{"}"}</div>
             </div>
