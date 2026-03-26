@@ -24,11 +24,21 @@ export async function POST(req: Request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: Record<string, unknown> = {};
+  let body: { action?: unknown; context?: unknown };
   try {
     body = await req.json();
   } catch {
-    // body is optional
+    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  if (typeof body.action !== "string" || !body.action.trim()) {
+    return Response.json({ error: "action is required and must be a non-empty string" }, { status: 400 });
+  }
+  if (typeof body.context !== "object" || body.context === null || Array.isArray(body.context)) {
+    return Response.json({ error: "context is required and must be a non-empty object" }, { status: 400 });
+  }
+  if (Object.keys(body.context as object).length === 0) {
+    return Response.json({ error: "context must not be empty" }, { status: 400 });
   }
 
   const { rpID } = getRpConfig(req);
@@ -51,7 +61,7 @@ export async function POST(req: Request) {
     .insert({
       expires_at: expiresAt,
       webauthn_challenge: webauthnOptions.challenge,
-      transaction_context: body.transaction_context ?? null,
+      transaction_context: { action: body.action, context: body.context },
     })
     .select("id")
     .single();

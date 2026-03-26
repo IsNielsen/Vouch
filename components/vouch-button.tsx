@@ -20,6 +20,8 @@ interface VouchButtonProps {
   className?: string;
   challengeEndpoint?: string;
   verifyEndpoint?: string;
+  /** Skip real WebAuthn — for the public demo page */
+  demoMode?: boolean;
 }
 
 type State = "idle" | "loading" | "no-passkey" | "error";
@@ -31,6 +33,7 @@ export function VouchButton({
   className,
   challengeEndpoint = "/api/demo/challenge",
   verifyEndpoint = "/api/demo/verify",
+  demoMode = false,
 }: VouchButtonProps) {
   const [state, setState] = useState<State>("idle");
   const [error, setError] = useState("");
@@ -50,15 +53,21 @@ export function VouchButton({
       if (challengeErr) throw new Error(challengeErr);
 
       let assertion;
-      try {
-        assertion = await startAuthentication({ optionsJSON: webauthn_options });
-      } catch (e: unknown) {
-        const name = e instanceof Error ? e.name : "";
-        if (name === "NotAllowedError" || name === "NotSupportedError") {
-          setState("no-passkey");
-          return;
+      if (demoMode) {
+        // Simulate a brief biometric delay without touching real WebAuthn
+        await new Promise((r) => setTimeout(r, 800));
+        assertion = { demo: true };
+      } else {
+        try {
+          assertion = await startAuthentication({ optionsJSON: webauthn_options });
+        } catch (e: unknown) {
+          const name = e instanceof Error ? e.name : "";
+          if (name === "NotAllowedError" || name === "NotSupportedError") {
+            setState("no-passkey");
+            return;
+          }
+          throw e;
         }
-        throw e;
       }
 
       const verifyRes = await fetch(`${verifyEndpoint}/${challenge_id}`, {

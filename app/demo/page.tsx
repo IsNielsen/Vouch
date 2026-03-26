@@ -344,6 +344,7 @@ export default function DemoPage() {
               <VouchButton
                 transactionContext={tx}
                 onVerified={handleVerified}
+                demoMode
               />
             </div>
           </div>
