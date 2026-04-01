@@ -71,7 +71,7 @@ const receipt: VouchReceipt = await vouch.challenge.verify(
 console.log(receipt.pqc_signature);`,
 
   cURL: `# Step 1: Create challenge
-curl -X POST https://api.vouch.id/v1/challenge \\
+curl -X POST /api/vouch/challenge \\
   -H "Authorization: Bearer $VOUCH_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -84,7 +84,7 @@ curl -X POST https://api.vouch.id/v1/challenge \\
   }'
 
 # Step 2: Verify assertion (after browser collects it)
-curl -X POST https://api.vouch.id/v1/verify/$CHALLENGE_ID \\
+curl -X POST /api/vouch/verify/$CHALLENGE_ID \\
   -H "Authorization: Bearer $VOUCH_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{ "assertion": { ... } }'`,
@@ -345,6 +345,8 @@ export default function DemoPage() {
                 transactionContext={tx}
                 onVerified={handleVerified}
                 demoMode
+                challengeEndpoint="/api/demo/challenge"
+                verifyEndpoint="/api/demo/verify"
               />
             </div>
           </div>
