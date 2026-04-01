@@ -10,7 +10,17 @@ import {
   ChevronUp,
   Shield,
 } from "lucide-react";
-import type { VerifiedSignature } from "@/app/verify/[sessionId]/page";
+type VerifiedSignature = {
+  id: string;
+  signerEmail: string;
+  signed_at: string;
+  ip_address?: string | null;
+  auth_method?: string | null;
+  document_hash: string;
+  credential_id: string;
+  pqc_public_key?: string | null;
+  pqcVerified: boolean;
+};
 
 type Session = {
   id: string;
