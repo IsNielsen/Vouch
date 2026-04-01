@@ -132,6 +132,7 @@ export async function POST(
     .from("vouch_challenges")
     .update({
       status: "verified",
+      verified_at: verifiedAt,
       credential_id: (passkey as { id: string }).id,
       pqc_signature: pqcSignature,
       pqc_public_key: pqcPublicKey,
