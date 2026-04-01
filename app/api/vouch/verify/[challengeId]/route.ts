@@ -152,6 +152,22 @@ export async function POST(
     return Response.json({ error: updateError.message }, { status: 500 });
   }
 
+  const webhookUrl = (challenge as { webhook_url?: string | null }).webhook_url;
+  if (webhookUrl) {
+    fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        event: "vouch.verified",
+        challenge_id: challengeId,
+        credential_id: (passkey as { id: string }).id,
+        verified_at: verifiedAt,
+        pqc_public_key: pqcPublicKey,
+        transaction_context: transactionContext,
+      }),
+    }).catch(() => {});
+  }
+
   return Response.json({
     challenge_id: challengeId,
     verified: true,
