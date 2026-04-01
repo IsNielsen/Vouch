@@ -1,8 +1,8 @@
-import { ml_dsa65 } from "@noble/post-quantum/ml-dsa.js";
 import { verifyAuthenticationResponse } from "@simplewebauthn/server";
 import { isoBase64URL } from "@simplewebauthn/server/helpers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getRpConfig } from "@/lib/webauthn/rp";
+import { pqcSign } from "@/lib/webauthn/pqc-sign";
 import { verifyApiKey } from "@/lib/api-auth";
 
 export async function POST(
@@ -91,37 +91,14 @@ export async function POST(
 
   const transactionContext = (challenge as { transaction_context: unknown }).transaction_context;
 
-  // Key versioning: use PQC_SIGNING_SECRET (v2) if set, fall back to SUPABASE_SERVICE_ROLE_KEY (v1)
-  const pqcSigningSecret = process.env.PQC_SIGNING_SECRET;
-  const pqcKeyVersion = pqcSigningSecret ? 2 : 1;
-  const hmacRoot = pqcSigningSecret ?? process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  const derivationPrefix = pqcSigningSecret ? "pqc-v2:" : "pqc-v1:";
-
   let pqcSignature: string;
   let pqcPublicKey: string;
+  let pqcKeyVersion: number;
   try {
-    const hmacKey = await crypto.subtle.importKey(
-      "raw",
-      Buffer.from(hmacRoot),
-      { name: "HMAC", hash: "SHA-256" },
-      false,
-      ["sign"]
-    );
-    const seedBuffer = await crypto.subtle.sign(
-      "HMAC",
-      hmacKey,
-      Buffer.from(derivationPrefix + (passkey as { id: string }).id)
-    );
-    const seed = new Uint8Array(seedBuffer).slice(0, 32);
-    const { secretKey, publicKey } = ml_dsa65.keygen(seed);
-
-    const contextBytes = Buffer.from(JSON.stringify(transactionContext ?? {}));
-    const hashBuffer = await crypto.subtle.digest("SHA-256", contextBytes);
-    const hashBytes = new Uint8Array(hashBuffer);
-    const pqcSig = ml_dsa65.sign(hashBytes, secretKey);
-
-    pqcSignature = Buffer.from(pqcSig).toString("base64");
-    pqcPublicKey = Buffer.from(publicKey).toString("base64");
+    ({ pqcSignature, pqcPublicKey, pqcKeyVersion } = await pqcSign(
+      (passkey as { id: string }).id,
+      transactionContext
+    ));
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "PQC signing error";
     return Response.json({ error: msg }, { status: 500 });
