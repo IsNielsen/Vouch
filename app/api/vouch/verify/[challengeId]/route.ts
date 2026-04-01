@@ -91,12 +91,18 @@ export async function POST(
 
   const transactionContext = (challenge as { transaction_context: unknown }).transaction_context;
 
+  // Key versioning: use PQC_SIGNING_SECRET (v2) if set, fall back to SUPABASE_SERVICE_ROLE_KEY (v1)
+  const pqcSigningSecret = process.env.PQC_SIGNING_SECRET;
+  const pqcKeyVersion = pqcSigningSecret ? 2 : 1;
+  const hmacRoot = pqcSigningSecret ?? process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const derivationPrefix = pqcSigningSecret ? "pqc-v2:" : "pqc-v1:";
+
   let pqcSignature: string;
   let pqcPublicKey: string;
   try {
     const hmacKey = await crypto.subtle.importKey(
       "raw",
-      Buffer.from(process.env.SUPABASE_SERVICE_ROLE_KEY!),
+      Buffer.from(hmacRoot),
       { name: "HMAC", hash: "SHA-256" },
       false,
       ["sign"]
@@ -104,7 +110,7 @@ export async function POST(
     const seedBuffer = await crypto.subtle.sign(
       "HMAC",
       hmacKey,
-      Buffer.from("pqc-v1:" + (passkey as { id: string }).id)
+      Buffer.from(derivationPrefix + (passkey as { id: string }).id)
     );
     const seed = new Uint8Array(seedBuffer).slice(0, 32);
     const { secretKey, publicKey } = ml_dsa65.keygen(seed);
@@ -136,6 +142,7 @@ export async function POST(
       credential_id: (passkey as { id: string }).id,
       pqc_signature: pqcSignature,
       pqc_public_key: pqcPublicKey,
+      pqc_key_version: pqcKeyVersion,
       authenticator_data: ((assertion.response as Record<string, unknown>)?.authenticatorData as string) ?? null,
       ip_address: ip,
     })
