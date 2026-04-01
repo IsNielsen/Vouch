@@ -2,20 +2,7 @@ import { generateAuthenticationOptions } from "@simplewebauthn/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getRpConfig } from "@/lib/webauthn/rp";
 
-// SQL migration required:
-// CREATE TABLE vouch_challenges (
-//   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-//   created_at timestamptz NOT NULL DEFAULT now(),
-//   expires_at timestamptz NOT NULL,
-//   status text NOT NULL DEFAULT 'pending', -- pending | verified | expired
-//   webauthn_challenge text NOT NULL,
-//   transaction_context jsonb,
-//   credential_id text,
-//   pqc_signature text,
-//   pqc_public_key text,
-//   authenticator_data text,
-//   ip_address text
-// );
+// DB: see supabase/migrations/20260331_vouch_challenges.sql
 
 export async function POST(req: Request) {
   const auth = req.headers.get("authorization") ?? "";
