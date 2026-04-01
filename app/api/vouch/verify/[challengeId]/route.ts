@@ -154,18 +154,39 @@ export async function POST(
 
   const webhookUrl = (challenge as { webhook_url?: string | null }).webhook_url;
   if (webhookUrl) {
-    fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        event: "vouch.verified",
-        challenge_id: challengeId,
-        credential_id: (passkey as { id: string }).id,
-        verified_at: verifiedAt,
-        pqc_public_key: pqcPublicKey,
-        transaction_context: transactionContext,
-      }),
-    }).catch(() => {});
+    // Block SSRF: reject private/loopback IP ranges and metadata endpoints
+    const isSafeWebhookUrl = (() => {
+      try {
+        const u = new URL(webhookUrl);
+        if (u.protocol !== "https:") return false;
+        const host = u.hostname.toLowerCase();
+        // Block localhost, metadata endpoints, and common private IP ranges
+        if (host === "localhost" || host === "169.254.169.254") return false;
+        if (/^127\./.test(host)) return false;
+        if (/^10\./.test(host)) return false;
+        if (/^172\.(1[6-9]|2\d|3[01])\./.test(host)) return false;
+        if (/^192\.168\./.test(host)) return false;
+        if (/^::1$/.test(host) || host === "[::1]") return false;
+        return true;
+      } catch {
+        return false;
+      }
+    })();
+    if (isSafeWebhookUrl) {
+      fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: AbortSignal.timeout(5000),
+        body: JSON.stringify({
+          event: "vouch.verified",
+          challenge_id: challengeId,
+          credential_id: (passkey as { id: string }).id,
+          verified_at: verifiedAt,
+          pqc_public_key: pqcPublicKey,
+          transaction_context: transactionContext,
+        }),
+      }).catch(() => {});
+    }
   }
 
   return Response.json({

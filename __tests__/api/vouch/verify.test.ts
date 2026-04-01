@@ -14,6 +14,15 @@ vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({ from: mockFrom }),
 }));
 
+vi.mock("@/lib/api-auth", () => ({
+  verifyApiKey: vi.fn().mockImplementation(async (req: Request) => {
+    const auth = req.headers.get("authorization") ?? "";
+    const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+    if (token !== "test-api-key") return null;
+    return { userId: "user-uuid", keyId: "key-uuid", keyHash: "abc123" };
+  }),
+}));
+
 const { mockVerifyAuthenticationResponse } = vi.hoisted(() => ({
   mockVerifyAuthenticationResponse: vi.fn(),
 }));
@@ -41,7 +50,6 @@ vi.mock("@noble/post-quantum/ml-dsa.js", () => ({
   },
 }));
 
-process.env.VOUCH_API_KEY = "test-api-key";
 process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-role-key";
 
 import { POST } from "@/app/api/vouch/verify/[challengeId]/route";
