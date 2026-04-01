@@ -1,5 +1,7 @@
-import { randomUUID } from "crypto";
+import { generateAuthenticationOptions } from "@simplewebauthn/server";
+import { getRpConfig } from "@/lib/webauthn/rp";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { demoChallenges } from "@/lib/demo-store";
 
 export async function POST(req: Request) {
   const ip =
@@ -12,16 +14,33 @@ export async function POST(req: Request) {
     );
   }
 
-  const challenge_id = randomUUID();
+  let body: { transaction_context?: unknown } = {};
+  try {
+    body = await req.json();
+  } catch {
+    // no-op: body is optional for the demo endpoint
+  }
 
-  // Fake WebAuthn options — VouchButton in demoMode won't call startAuthentication
-  const webauthn_options = {
-    challenge: Buffer.from(randomUUID()).toString("base64url"),
-    rpId: "demo",
-    allowCredentials: [],
+  const { rpID } = getRpConfig(req);
+  const webauthnOptions = await generateAuthenticationOptions({
+    rpID,
     userVerification: "required",
-    timeout: 60000,
-  };
+    allowCredentials: [],
+  });
 
-  return Response.json({ challenge_id, webauthn_options, expires_in: 300 });
+  const challengeId = crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + 300_000).toISOString();
+  demoChallenges.set(challengeId, {
+    id: challengeId,
+    webauthn_challenge: webauthnOptions.challenge,
+    transaction_context: body.transaction_context ?? null,
+    expires_at: expiresAt,
+    status: "pending",
+  });
+
+  return Response.json({
+    challenge_id: challengeId,
+    webauthn_options: webauthnOptions,
+    expires_in: 300,
+  });
 }

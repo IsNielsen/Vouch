@@ -1,10 +1,5 @@
 import { checkRateLimit } from "@/lib/rate-limit";
-
-// Stable fake keys for the demo receipt
-const FAKE_PQC_PUBLIC_KEY =
-  "pqc_pub_MLDSADemo1234567890abcdef" + "0".repeat(64);
-const FAKE_PQC_SIGNATURE =
-  "pqc_sig_MLDSADemo" + "a1b2c3d4e5f6".repeat(8);
+import { demoChallenges } from "@/lib/demo-store";
 
 export async function POST(
   req: Request,
@@ -21,13 +16,23 @@ export async function POST(
     );
   }
 
-  // Return a fake PQC-signed receipt
+  const challenge = demoChallenges.get(challengeId);
+  const transactionContext = challenge?.transaction_context ?? null;
+
+  const verifiedAt = new Date().toISOString();
+  const fakeKey = `pqc_pub_MLDSA_demo_${challengeId.slice(0, 8)}`;
+  const fakeSig = `pqc_sig_MLDSA_demo_${challengeId.slice(0, 8)}_${Date.now()}`;
+
+  if (challenge) {
+    demoChallenges.delete(challengeId);
+  }
+
   return Response.json({
     challenge_id: challengeId,
-    verified_at: new Date().toISOString(),
-    pqc_public_key: FAKE_PQC_PUBLIC_KEY,
-    pqc_signature: FAKE_PQC_SIGNATURE,
-    algorithm: "ML-DSA-65 (FIPS 204) — demo",
     transaction_verified: true,
+    verified_at: verifiedAt,
+    pqc_public_key: fakeKey,
+    pqc_signature: fakeSig,
+    transaction_context: transactionContext,
   });
 }
