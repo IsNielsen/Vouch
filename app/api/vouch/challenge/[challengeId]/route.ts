@@ -15,7 +15,7 @@ export async function GET(
 
   const { data } = await admin
     .from("vouch_challenges")
-    .select("id, created_at, expires_at, status, transaction_context, credential_id, pqc_signature, pqc_public_key")
+    .select("id, created_at, expires_at, status, transaction_context, credential_id, device_id, pqc_signature, pqc_public_key")
     .eq("id", challengeId)
     .single();
 
