@@ -173,6 +173,7 @@ export async function POST(
     verified: true,
     verified_at: verifiedAt,
     credential_id: (passkey as { id: string }).id,
+    device_id: (passkey as { id: string }).id, // spec alias for credential_id
     pqc_public_key: pqcPublicKey,
     pqc_signature: pqcSignature,
     transaction_context: transactionContext,
