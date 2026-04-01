@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Copy, Check, ArrowRight, ShieldCheck } from "lucide-react";
+import { Copy, Check, ArrowRight, ShieldCheck, Fingerprint, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { SectionEyebrow } from "@/components/section-eyebrow";
 import { VouchButton, VouchReceipt } from "@/components/vouch-button";
+import { startRegistration } from "@simplewebauthn/browser";
 import Prism from "prismjs";
 import "prismjs/components/prism-typescript";
 import "prismjs/components/prism-bash";
@@ -144,6 +145,8 @@ export default function DemoPage() {
   const [selectedRecipient, setSelectedRecipient] = useState(0);
   const [selectedAccount, setSelectedAccount] = useState(0);
   const [note, setNote] = useState("Rent - March 2026");
+  const [regState, setRegState] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [regError, setRegError] = useState("");
 
   const highlightedCode = useMemo(() => highlight(CODE[tab], tab), [tab]);
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -166,6 +169,31 @@ export default function DemoPage() {
 
   function handleVerified(receipt: VouchReceipt) {
     setResponse(JSON.stringify(receipt, null, 2));
+  }
+
+  async function handleRegister() {
+    setRegState("loading");
+    setRegError("");
+    try {
+      const optRes = await fetch("/api/passkey/register/start", { method: "POST" });
+      const options = await optRes.json();
+      if (options.error) throw new Error(options.error);
+
+      const attResp = await startRegistration({ optionsJSON: options });
+
+      const completeRes = await fetch("/api/passkey/register/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(attResp),
+      });
+      const result = await completeRes.json();
+      if (!completeRes.ok) throw new Error(result.error);
+
+      setRegState("success");
+    } catch (e: unknown) {
+      setRegError(e instanceof Error ? e.message : "Registration failed");
+      setRegState("error");
+    }
   }
 
   const recipient = RECIPIENTS[selectedRecipient];
@@ -239,12 +267,50 @@ export default function DemoPage() {
 
         {/* Right column */}
         <div className="flex flex-col gap-5">
+          {/* Step 1: Register biometric (shown until registered) */}
+          {regState !== "success" && (
+            <div className="bg-[#111118] rounded-[10px] border border-[#1a1a2e] overflow-hidden">
+              <div className="bg-[#16161f] border-b border-[#1a1a2e] px-5 py-4 flex items-center justify-between">
+                <div>
+                  <p className="text-[#555570] text-xs">Step 1 of 2</p>
+                  <p className="text-[#f0f0fa] font-semibold text-sm">Register your biometric</p>
+                </div>
+                <ShieldCheck className="h-5 w-5 text-[#5577ff]" />
+              </div>
+              <div className="p-5 space-y-4">
+                <p className="text-sm text-[#8888a8]">
+                  Register your Face ID or Touch ID once. You&apos;ll use it to authorize the transfer in step 2.
+                </p>
+                <button
+                  onClick={handleRegister}
+                  disabled={regState === "loading"}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-[#5577ff] hover:bg-[#3344cc] text-white transition-all duration-150 hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                >
+                  {regState === "loading" ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Waiting for biometric…
+                    </>
+                  ) : (
+                    <>
+                      <Fingerprint className="h-4 w-4" />
+                      Register with Face ID / Touch ID
+                    </>
+                  )}
+                </button>
+                {regState === "error" && (
+                  <p className="text-xs text-red-400 text-center">{regError}</p>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Transfer widget */}
-          <div className="bg-[#111118] rounded-[10px] border border-[#1a1a2e] overflow-hidden">
+          <div className={cn("bg-[#111118] rounded-[10px] border border-[#1a1a2e] overflow-hidden", regState !== "success" && "opacity-40 pointer-events-none select-none")}>
             {/* Bank header */}
             <div className="bg-[#16161f] border-b border-[#1a1a2e] px-5 py-4 flex items-center justify-between">
               <div>
-                <p className="text-[#555570] text-xs">NorthBank</p>
+                <p className="text-[#555570] text-xs">{regState === "success" ? "NorthBank" : "Step 2 of 2"}</p>
                 <p className="text-[#f0f0fa] font-semibold text-sm">Send money</p>
               </div>
               <ShieldCheck className="h-5 w-5 text-[#5577ff]" />
@@ -344,7 +410,6 @@ export default function DemoPage() {
               <VouchButton
                 transactionContext={tx}
                 onVerified={handleVerified}
-                demoMode
                 challengeEndpoint="/api/demo/challenge"
                 verifyEndpoint="/api/demo/verify"
               />
