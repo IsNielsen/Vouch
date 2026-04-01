@@ -2,7 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function verifyApiKey(
   req: Request
-): Promise<{ userId: string; keyId: string } | null> {
+): Promise<{ userId: string; keyId: string; keyHash: string } | null> {
   const authHeader = req.headers.get("authorization");
   if (!authHeader?.startsWith("Bearer ")) return null;
 
@@ -23,5 +23,5 @@ export async function verifyApiKey(
     .single();
 
   if (!data) return null;
-  return { userId: data.user_id, keyId: data.id };
+  return { userId: data.user_id, keyId: data.id, keyHash };
 }

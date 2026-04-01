@@ -31,8 +31,8 @@ export function VouchButton({
   transactionContext,
   label = "Verify & Sign",
   className,
-  challengeEndpoint = "/api/demo/challenge",
-  verifyEndpoint = "/api/demo/verify",
+  challengeEndpoint = "/api/vouch/challenge",
+  verifyEndpoint = "/api/vouch/verify",
   demoMode = false,
 }: VouchButtonProps) {
   const [state, setState] = useState<State>("idle");
@@ -89,8 +89,7 @@ export function VouchButton({
   return (
     <div className="flex flex-col gap-2">
       <p className="text-[11px] text-[#555570] text-center">
-        By clicking, you are using your biometric to electronically sign this
-        transaction under UETA/ESIGN.
+        Biometric verification required to authorize this transaction.
       </p>
       <button
         onClick={handleClick}

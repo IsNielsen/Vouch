@@ -3,14 +3,14 @@ import { verifyAuthenticationResponse } from "@simplewebauthn/server";
 import { isoBase64URL } from "@simplewebauthn/server/helpers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getRpConfig } from "@/lib/webauthn/rp";
+import { verifyApiKey } from "@/lib/api-auth";
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ challengeId: string }> }
 ) {
-  const auth = req.headers.get("authorization") ?? "";
-  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-  if (token !== process.env.VOUCH_API_KEY) {
+  const apiAuth = await verifyApiKey(req);
+  if (!apiAuth) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -91,12 +91,18 @@ export async function POST(
 
   const transactionContext = (challenge as { transaction_context: unknown }).transaction_context;
 
+  // Key versioning: use PQC_SIGNING_SECRET (v2) if set, fall back to SUPABASE_SERVICE_ROLE_KEY (v1)
+  const pqcSigningSecret = process.env.PQC_SIGNING_SECRET;
+  const pqcKeyVersion = pqcSigningSecret ? 2 : 1;
+  const hmacRoot = pqcSigningSecret ?? process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const derivationPrefix = pqcSigningSecret ? "pqc-v2:" : "pqc-v1:";
+
   let pqcSignature: string;
   let pqcPublicKey: string;
   try {
     const hmacKey = await crypto.subtle.importKey(
       "raw",
-      Buffer.from(process.env.SUPABASE_SERVICE_ROLE_KEY!),
+      Buffer.from(hmacRoot),
       { name: "HMAC", hash: "SHA-256" },
       false,
       ["sign"]
@@ -104,7 +110,7 @@ export async function POST(
     const seedBuffer = await crypto.subtle.sign(
       "HMAC",
       hmacKey,
-      Buffer.from("pqc-v1:" + (passkey as { id: string }).id)
+      Buffer.from(derivationPrefix + (passkey as { id: string }).id)
     );
     const seed = new Uint8Array(seedBuffer).slice(0, 32);
     const { secretKey, publicKey } = ml_dsa65.keygen(seed);
@@ -132,9 +138,11 @@ export async function POST(
     .from("vouch_challenges")
     .update({
       status: "verified",
+      verified_at: verifiedAt,
       credential_id: (passkey as { id: string }).id,
       pqc_signature: pqcSignature,
       pqc_public_key: pqcPublicKey,
+      pqc_key_version: pqcKeyVersion,
       authenticator_data: ((assertion.response as Record<string, unknown>)?.authenticatorData as string) ?? null,
       ip_address: ip,
     })
@@ -144,11 +152,49 @@ export async function POST(
     return Response.json({ error: updateError.message }, { status: 500 });
   }
 
+  const webhookUrl = (challenge as { webhook_url?: string | null }).webhook_url;
+  if (webhookUrl) {
+    // Block SSRF: reject private/loopback IP ranges and metadata endpoints
+    const isSafeWebhookUrl = (() => {
+      try {
+        const u = new URL(webhookUrl);
+        if (u.protocol !== "https:") return false;
+        const host = u.hostname.toLowerCase();
+        // Block localhost, metadata endpoints, and common private IP ranges
+        if (host === "localhost" || host === "169.254.169.254") return false;
+        if (/^127\./.test(host)) return false;
+        if (/^10\./.test(host)) return false;
+        if (/^172\.(1[6-9]|2\d|3[01])\./.test(host)) return false;
+        if (/^192\.168\./.test(host)) return false;
+        if (/^::1$/.test(host) || host === "[::1]") return false;
+        return true;
+      } catch {
+        return false;
+      }
+    })();
+    if (isSafeWebhookUrl) {
+      fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: AbortSignal.timeout(5000),
+        body: JSON.stringify({
+          event: "vouch.verified",
+          challenge_id: challengeId,
+          credential_id: (passkey as { id: string }).id,
+          verified_at: verifiedAt,
+          pqc_public_key: pqcPublicKey,
+          transaction_context: transactionContext,
+        }),
+      }).catch(() => {});
+    }
+  }
+
   return Response.json({
     challenge_id: challengeId,
     verified: true,
     verified_at: verifiedAt,
     credential_id: (passkey as { id: string }).id,
+    device_id: (passkey as { id: string }).id, // spec alias for credential_id
     pqc_public_key: pqcPublicKey,
     pqc_signature: pqcSignature,
     transaction_context: transactionContext,

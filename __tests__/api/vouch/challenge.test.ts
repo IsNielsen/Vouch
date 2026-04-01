@@ -20,6 +20,15 @@ vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({ from: mockFrom }),
 }));
 
+vi.mock("@/lib/api-auth", () => ({
+  verifyApiKey: vi.fn().mockImplementation(async (req: Request) => {
+    const auth = req.headers.get("authorization") ?? "";
+    const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+    if (token !== "test-api-key") return null;
+    return { userId: "user-uuid", keyId: "key-uuid", keyHash: "abc123" };
+  }),
+}));
+
 vi.mock("@simplewebauthn/server", () => ({
   generateAuthenticationOptions: vi.fn().mockResolvedValue({
     challenge: "base64url-challenge-string",
@@ -34,10 +43,11 @@ vi.mock("@/lib/webauthn/rp", () => ({
   getRpConfig: () => ({ rpID: "localhost", origin: "http://localhost:3000" }),
 }));
 
-process.env.VOUCH_API_KEY = "test-api-key";
 
 import { POST } from "@/app/api/vouch/challenge/route";
 import { GET } from "@/app/api/vouch/challenge/[challengeId]/route";
+
+const VALID_BODY = { action: "verify_payment", transaction_context: { amount: 100, currency: "USD" } };
 
 function makeRequest(opts: { method?: string; body?: unknown; headers?: Record<string, string> } = {}) {
   return new Request("http://localhost:3000/api/vouch/challenge", {
@@ -77,7 +87,7 @@ describe("POST /api/vouch/challenge", () => {
   it("returns 200 with challenge_id and webauthn_options on valid request", async () => {
     const req = makeRequest({
       headers: { Authorization: "Bearer test-api-key" },
-      body: { transaction_context: { amount: 100, currency: "USD" } },
+      body: VALID_BODY,
     });
     const res = await POST(req);
     expect(res.status).toBe(200);
@@ -88,13 +98,13 @@ describe("POST /api/vouch/challenge", () => {
     expect(body.expires_in).toBe(300);
   });
 
-  it("returns 200 with no body (transaction_context is optional)", async () => {
+  it("returns 400 when required fields are missing", async () => {
     const req = new Request("http://localhost:3000/api/vouch/challenge", {
       method: "POST",
       headers: { Authorization: "Bearer test-api-key" },
     });
     const res = await POST(req);
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(400);
   });
 
   it("returns 500 when DB insert fails", async () => {
@@ -102,7 +112,7 @@ describe("POST /api/vouch/challenge", () => {
       data: null,
       error: { message: "DB error" },
     });
-    const req = makeRequest({ headers: { Authorization: "Bearer test-api-key" } });
+    const req = makeRequest({ headers: { Authorization: "Bearer test-api-key" }, body: VALID_BODY });
     const res = await POST(req);
     expect(res.status).toBe(500);
   });

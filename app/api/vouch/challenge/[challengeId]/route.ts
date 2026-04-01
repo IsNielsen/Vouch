@@ -1,12 +1,12 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { verifyApiKey } from "@/lib/api-auth";
 
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ challengeId: string }> }
 ) {
-  const auth = req.headers.get("authorization") ?? "";
-  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-  if (token !== process.env.VOUCH_API_KEY) {
+  const apiAuth = await verifyApiKey(req);
+  if (!apiAuth) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -15,7 +15,7 @@ export async function GET(
 
   const { data } = await admin
     .from("vouch_challenges")
-    .select("id, created_at, expires_at, status, transaction_context, credential_id, pqc_signature, pqc_public_key")
+    .select("id, created_at, expires_at, status, transaction_context, user_id, verified_at, credential_id, device_id, pqc_signature, pqc_public_key")
     .eq("id", challengeId)
     .single();
 
