@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: { action?: unknown; context?: unknown };
+  let body: { action?: unknown; context?: unknown; webhook_url?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -39,6 +39,9 @@ export async function POST(req: Request) {
   }
   if (Object.keys(body.context as object).length === 0) {
     return Response.json({ error: "context must not be empty" }, { status: 400 });
+  }
+  if (body.webhook_url !== undefined && (typeof body.webhook_url !== "string" || !body.webhook_url.startsWith("https://"))) {
+    return Response.json({ error: "webhook_url must be an https URL" }, { status: 400 });
   }
 
   const { rpID } = getRpConfig(req);
@@ -62,6 +65,7 @@ export async function POST(req: Request) {
       expires_at: expiresAt,
       webauthn_challenge: webauthnOptions.challenge,
       transaction_context: { action: body.action, context: body.context },
+      webhook_url: typeof body.webhook_url === "string" ? body.webhook_url : null,
     })
     .select("id")
     .single();
