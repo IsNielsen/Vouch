@@ -20,7 +20,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@vouch/react": ["./packages/vouch-react/src/index.ts"],
+      "@vouch/sdk": ["./packages/vouch-sdk/src/index.ts"]
     }
   },
   "include": [

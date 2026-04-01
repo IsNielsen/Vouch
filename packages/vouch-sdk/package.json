@@ -1,0 +1,7 @@
+{
+  "name": "@vouch/sdk",
+  "version": "0.1.0",
+  "description": "Node.js SDK for the Vouch fraud-prevention API",
+  "main": "src/index.ts",
+  "types": "src/index.ts"
+}
