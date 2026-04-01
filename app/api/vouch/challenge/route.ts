@@ -1,13 +1,13 @@
 import { generateAuthenticationOptions } from "@simplewebauthn/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getRpConfig } from "@/lib/webauthn/rp";
+import { verifyApiKey } from "@/lib/api-auth";
 
 // DB: see supabase/migrations/20260331_vouch_challenges.sql
 
 export async function POST(req: Request) {
-  const auth = req.headers.get("authorization") ?? "";
-  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-  if (token !== process.env.VOUCH_API_KEY) {
+  const apiAuth = await verifyApiKey(req);
+  if (!apiAuth) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -49,6 +49,7 @@ export async function POST(req: Request) {
       expires_at: expiresAt,
       webauthn_challenge: webauthnOptions.challenge,
       transaction_context: { action: body.action, context: body.context },
+      api_key_hash: apiAuth.keyHash,
     })
     .select("id")
     .single();
