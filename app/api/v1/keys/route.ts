@@ -1,6 +1,25 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+export async function GET() {
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.getClaims();
+  if (error || !data?.claims) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const userId = data.claims.sub;
+
+  const admin = createAdminClient();
+  const { data: keys, error: fetchError } = await admin
+    .from("api_keys")
+    .select("id, name, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (fetchError) return Response.json({ error: fetchError.message }, { status: 500 });
+  return Response.json({ keys: keys ?? [] });
+}
+
 export async function POST(req: Request) {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getClaims();

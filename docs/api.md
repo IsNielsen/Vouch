@@ -14,7 +14,7 @@ All API endpoints require a Bearer token in the `Authorization` header.
 
 ### Generate a key
 
-Keys are generated from the [API Console](/protected/api-test) in your dashboard, or via the API (requires a Supabase session cookie):
+Keys are generated from the [Developer Dashboard](/protected/dashboard), or via the API (requires a Supabase session cookie):
 
 ```
 POST /api/v1/keys

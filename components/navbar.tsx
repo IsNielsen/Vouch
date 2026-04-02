@@ -16,14 +16,9 @@ async function AuthNavLinks() {
   if (!user) return null;
 
   return (
-    <>
-      <Link href="/protected/upload" className="text-sm text-[#8888a8] hover:text-[#f0f0fa] transition-colors duration-150">
-        Upload
-      </Link>
-      <Link href="/protected/signed" className="text-sm text-[#8888a8] hover:text-[#f0f0fa] transition-colors duration-150">
-        My Documents
-      </Link>
-    </>
+    <Link href="/protected/dashboard" className="text-sm text-[#8888a8] hover:text-[#f0f0fa] transition-colors duration-150">
+      Dashboard
+    </Link>
   );
 }
 

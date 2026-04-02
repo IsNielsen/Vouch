@@ -25,6 +25,9 @@ export async function POST(
 
   const admin = createAdminClient();
 
+  const markFailed = (reason: string) =>
+    admin.from("vouch_challenges").update({ status: "failed", failure_reason: reason }).eq("id", challengeId);
+
   const { data: challenge } = await admin
     .from("vouch_challenges")
     .select("*")
@@ -53,6 +56,7 @@ export async function POST(
     .single();
 
   if (!passkey) {
+    await markFailed("Passkey not registered");
     return Response.json({ error: "Passkey not found" }, { status: 404 });
   }
 
@@ -74,10 +78,12 @@ export async function POST(
     });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Verification error";
+    await markFailed(msg);
     return Response.json({ error: msg }, { status: 400 });
   }
 
   if (!verification.verified) {
+    await markFailed("WebAuthn assertion rejected");
     return Response.json({ error: "Verification failed" }, { status: 400 });
   }
 
