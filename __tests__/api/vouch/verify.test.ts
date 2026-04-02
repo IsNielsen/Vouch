@@ -40,6 +40,10 @@ vi.mock("@/lib/webauthn/rp", () => ({
   getRpConfig: () => ({ rpID: "localhost", origin: "http://localhost:3000" }),
 }));
 
+vi.mock("@/lib/stripe", () => ({
+  stripe: {},
+}));
+
 vi.mock("@noble/post-quantum/ml-dsa.js", () => ({
   ml_dsa65: {
     keygen: vi.fn().mockReturnValue({

@@ -5,11 +5,18 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({ auth: { getClaims: mockGetClaims } }),
 }));
 
-const chain: Record<string, unknown> = {};
-chain.insert = vi.fn();
+const insertMock = vi.fn();
+const singleMock = vi.fn();
 
 vi.mock("@/lib/supabase/admin", () => ({
-  createAdminClient: () => ({ from: vi.fn().mockReturnValue(chain) }),
+  createAdminClient: () => ({
+    from: (table: string) => {
+      if (table === "user_billing") {
+        return { select: () => ({ eq: () => ({ single: singleMock }) }) };
+      }
+      return { insert: insertMock };
+    },
+  }),
 }));
 
 import { POST } from "@/app/api/v1/keys/route";
@@ -25,7 +32,8 @@ function makeRequest(body?: unknown) {
 describe("POST /api/v1/keys", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (chain.insert as ReturnType<typeof vi.fn>).mockResolvedValue({ error: null });
+    singleMock.mockResolvedValue({ data: { billing_active: true } });
+    insertMock.mockResolvedValue({ error: null });
   });
 
   it("returns 401 when unauthenticated", async () => {
@@ -34,6 +42,15 @@ describe("POST /api/v1/keys", () => {
     expect(res.status).toBe(401);
     const body = await res.json();
     expect(body.error).toBe("Unauthorized");
+  });
+
+  it("returns 403 when billing not active", async () => {
+    mockGetClaims.mockResolvedValue({ data: { claims: { sub: "user-uuid" } }, error: null });
+    singleMock.mockResolvedValue({ data: { billing_active: false } });
+    const res = await POST(makeRequest());
+    expect(res.status).toBe(403);
+    const body = await res.json();
+    expect(body.error).toMatch(/[Bb]illing/);
   });
 
   it("returns 200 with a vouch_sk_ key and default name", async () => {
@@ -55,7 +72,7 @@ describe("POST /api/v1/keys", () => {
 
   it("returns 500 when DB insert fails", async () => {
     mockGetClaims.mockResolvedValue({ data: { claims: { sub: "user-uuid" } }, error: null });
-    (chain.insert as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ error: { message: "DB error" } });
+    insertMock.mockResolvedValueOnce({ error: { message: "DB error" } });
     const res = await POST(makeRequest());
     expect(res.status).toBe(500);
     const body = await res.json();

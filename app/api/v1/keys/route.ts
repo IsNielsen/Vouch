@@ -28,6 +28,20 @@ export async function POST(req: Request) {
   }
   const userId = data.claims.sub;
 
+  const admin = createAdminClient();
+  const { data: billing } = await admin
+    .from("user_billing")
+    .select("billing_active")
+    .eq("user_id", userId)
+    .single();
+
+  if (!billing?.billing_active) {
+    return Response.json(
+      { error: "Billing setup required before creating API keys" },
+      { status: 403 }
+    );
+  }
+
   let name = "Default";
   try {
     const body = await req.json();
@@ -44,7 +58,6 @@ export async function POST(req: Request) {
   );
   const keyHash = Buffer.from(hashBuffer).toString("hex");
 
-  const admin = createAdminClient();
   const { error: insertError } = await admin.from("api_keys").insert({
     user_id: userId,
     name,
