@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getRpConfig } from "@/lib/webauthn/rp";
 import { pqcSign } from "@/lib/webauthn/pqc-sign";
 import { verifyApiKey } from "@/lib/api-auth";
+import { stripe } from "@/lib/stripe";
 
 export async function POST(
   req: Request,
@@ -134,6 +135,33 @@ export async function POST(
   if (updateError) {
     return Response.json({ error: updateError.message }, { status: 500 });
   }
+
+  // Fire-and-forget Stripe metered usage reporting
+  (async () => {
+    try {
+      const { data: apiKeyRow } = await admin
+        .from("api_keys")
+        .select("user_id")
+        .eq("key_hash", (challenge as { api_key_hash: string }).api_key_hash)
+        .single();
+      if (!apiKeyRow) return;
+      const { data: billing } = await admin
+        .from("user_billing")
+        .select("stripe_customer_id")
+        .eq("user_id", (apiKeyRow as { user_id: string }).user_id)
+        .single();
+      const customerId = (billing as { stripe_customer_id?: string | null } | null)?.stripe_customer_id;
+      if (!customerId) return;
+      const eventName = process.env.STRIPE_METER_EVENT_NAME ?? "vouch_verification";
+      await stripe.billing.meterEvents.create({
+        event_name: eventName,
+        payload: { stripe_customer_id: customerId, value: "1" },
+        timestamp: Math.floor(Date.now() / 1000),
+      });
+    } catch (err) {
+      console.error("Stripe usage:", err);
+    }
+  })();
 
   const webhookUrl = (challenge as { webhook_url?: string | null }).webhook_url;
   if (webhookUrl) {
