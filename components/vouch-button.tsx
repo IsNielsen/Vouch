@@ -15,6 +15,8 @@ export interface VouchReceipt {
 
 interface VouchButtonProps {
   onVerified: (receipt: VouchReceipt) => void;
+  onError?: (error: string) => void;
+  onStart?: () => void;
   transactionContext?: Record<string, unknown>;
   label?: string;
   className?: string;
@@ -28,6 +30,8 @@ type State = "idle" | "loading" | "no-passkey" | "error";
 
 export function VouchButton({
   onVerified,
+  onError,
+  onStart,
   transactionContext,
   label = "Verify & Sign",
   className,
@@ -41,6 +45,7 @@ export function VouchButton({
   async function handleClick() {
     setState("loading");
     setError("");
+    onStart?.();
 
     try {
       const challengeRes = await fetch(challengeEndpoint, {
@@ -81,8 +86,10 @@ export function VouchButton({
       setState("idle");
       onVerified(result);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Something went wrong");
+      const msg = e instanceof Error ? e.message : "Something went wrong";
+      setError(msg);
       setState("error");
+      onError?.(msg);
     }
   }
 

@@ -126,6 +126,34 @@ function highlight(code: string, tab: Tab): string {
   return Prism.highlight(code, Prism.languages[lang], lang);
 }
 
+function track(sessionId: string, event: string, data?: Record<string, unknown>) {
+  // Fire-and-forget; errors are intentionally ignored
+  fetch("/api/demo/analytics", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: sessionId, event, data }),
+  }).catch(() => {});
+}
+
+function parseBrowser(): { browser: string; os: string; device_type: string } {
+  const ua = navigator.userAgent;
+  const browser =
+    /Edg\//.test(ua) ? "Edge" :
+    /Chrome\//.test(ua) ? "Chrome" :
+    /Firefox\//.test(ua) ? "Firefox" :
+    /Safari\//.test(ua) ? "Safari" : "other";
+  const os =
+    /iPhone|iPad/.test(ua) ? "iOS" :
+    /Android/.test(ua) ? "Android" :
+    /Mac OS X/.test(ua) ? "macOS" :
+    /Windows/.test(ua) ? "Windows" :
+    /Linux/.test(ua) ? "Linux" : "other";
+  const device_type =
+    /iPhone|Android.*Mobile/.test(ua) ? "mobile" :
+    /iPad|Android(?!.*Mobile)/.test(ua) ? "tablet" : "desktop";
+  return { browser, os, device_type };
+}
+
 const ACCOUNTS = [
   { label: "Checking ••4821", value: "4821" },
   { label: "Savings ••9302", value: "9302" },
@@ -152,6 +180,37 @@ export default function DemoPage() {
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current); }, []);
 
+  const sessionId = useRef<string>(crypto.randomUUID());
+  const pageLoadTs = useRef<number>(Date.now());
+  const amountTracked = useRef(false);
+  const noteTracked = useRef(false);
+  const regStartTs = useRef<number>(0);
+  const verifyStartTs = useRef<number>(0);
+
+  useEffect(() => {
+    const { browser, os, device_type } = parseBrowser();
+    track(sessionId.current, "page_load", {
+      browser,
+      os,
+      device_type,
+      referrer: document.referrer || null,
+    });
+  }, []);
+
+  // page_unload — sendBeacon is the reliable way to fire on tab close
+  useEffect(() => {
+    function handleUnload() {
+      const body = JSON.stringify({
+        session_id: sessionId.current,
+        event: "page_unload",
+        data: { duration_ms: Date.now() - pageLoadTs.current },
+      });
+      navigator.sendBeacon("/api/demo/analytics", new Blob([body], { type: "application/json" }));
+    }
+    window.addEventListener("pagehide", handleUnload);
+    return () => window.removeEventListener("pagehide", handleUnload);
+  }, []);
+
   const tx = useMemo(() => ({
     amount: parseFloat(amount.replace(/,/g, "")),
     currency: "USD",
@@ -163,17 +222,35 @@ export default function DemoPage() {
   function handleCopy() {
     navigator.clipboard.writeText(CODE[tab]);
     setCopied(true);
+    track(sessionId.current, "code_copy", { tab });
     if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
     copyTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
   }
 
+  function handleTabChange(t: Tab) {
+    setTab(t);
+    track(sessionId.current, "code_tab", { tab: t });
+  }
+
   function handleVerified(receipt: VouchReceipt) {
     setResponse(JSON.stringify(receipt, null, 2));
+    track(sessionId.current, "verify_success", { duration_ms: Date.now() - verifyStartTs.current });
+  }
+
+  function handleVerifyError(error: string) {
+    track(sessionId.current, "verify_error", { error, duration_ms: Date.now() - verifyStartTs.current });
+  }
+
+  function handleVerifyStart() {
+    verifyStartTs.current = Date.now();
+    track(sessionId.current, "verify_start");
   }
 
   async function handleRegister() {
     setRegState("loading");
     setRegError("");
+    regStartTs.current = Date.now();
+    track(sessionId.current, "reg_start");
     try {
       const optRes = await fetch("/api/passkey/register/start", { method: "POST" });
       const options = await optRes.json();
@@ -190,9 +267,12 @@ export default function DemoPage() {
       if (!completeRes.ok) throw new Error(result.error);
 
       setRegState("success");
+      track(sessionId.current, "reg_success", { duration_ms: Date.now() - regStartTs.current });
     } catch (e: unknown) {
-      setRegError(e instanceof Error ? e.message : "Registration failed");
+      const msg = e instanceof Error ? e.message : "Registration failed";
+      setRegError(msg);
       setRegState("error");
+      track(sessionId.current, "reg_error", { error: msg, duration_ms: Date.now() - regStartTs.current });
     }
   }
 
@@ -235,7 +315,7 @@ export default function DemoPage() {
               {TABS.map((t) => (
                 <button
                   key={t}
-                  onClick={() => setTab(t)}
+                  onClick={() => handleTabChange(t)}
                   className={cn(
                     "px-4 py-1.5 rounded-md text-xs font-medium transition-colors duration-150",
                     tab === t
@@ -324,7 +404,10 @@ export default function DemoPage() {
                   {ACCOUNTS.map((a, i) => (
                     <button
                       key={a.value}
-                      onClick={() => setSelectedAccount(i)}
+                      onClick={() => {
+                        setSelectedAccount(i);
+                        track(sessionId.current, "account_change");
+                      }}
                       className={cn(
                         "flex-1 text-xs py-2 px-3 rounded-lg border transition-colors duration-150 text-left",
                         selectedAccount === i
@@ -346,7 +429,13 @@ export default function DemoPage() {
                   <input
                     type="text"
                     value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
+                    onChange={(e) => {
+                      setAmount(e.target.value);
+                      if (!amountTracked.current) {
+                        amountTracked.current = true;
+                        track(sessionId.current, "amount_change");
+                      }
+                    }}
                     className="w-full bg-[#16161f] border border-[#1a1a2e] rounded-lg pl-7 pr-12 py-2.5 text-xl font-semibold text-[#f0f0fa] focus:outline-hidden focus:ring-2 focus:ring-[#5577ff]/50 focus:border-[#5577ff] transition-colors duration-150"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#555570]">USD</span>
@@ -360,7 +449,10 @@ export default function DemoPage() {
                   {RECIPIENTS.map((r, i) => (
                     <button
                       key={r.name}
-                      onClick={() => setSelectedRecipient(i)}
+                      onClick={() => {
+                        setSelectedRecipient(i);
+                        track(sessionId.current, "recipient_change");
+                      }}
                       className={cn(
                         "w-full flex items-center gap-3 p-3 rounded-lg border transition-colors duration-150 text-left",
                         selectedRecipient === i
@@ -389,7 +481,13 @@ export default function DemoPage() {
                 <input
                   type="text"
                   value={note}
-                  onChange={(e) => setNote(e.target.value)}
+                  onChange={(e) => {
+                    setNote(e.target.value);
+                    if (!noteTracked.current) {
+                      noteTracked.current = true;
+                      track(sessionId.current, "note_change");
+                    }
+                  }}
                   className="mt-1 w-full bg-[#16161f] border border-[#1a1a2e] rounded-lg px-3 py-2 text-sm text-[#f0f0fa] focus:outline-hidden focus:ring-2 focus:ring-[#5577ff]/50 focus:border-[#5577ff] transition-colors duration-150"
                 />
               </div>
@@ -410,6 +508,8 @@ export default function DemoPage() {
               <VouchButton
                 transactionContext={tx}
                 onVerified={handleVerified}
+                onError={handleVerifyError}
+                onStart={handleVerifyStart}
                 challengeEndpoint="/api/demo/challenge"
                 verifyEndpoint="/api/demo/verify"
               />
