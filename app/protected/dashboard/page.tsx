@@ -12,6 +12,7 @@ interface ApiKey {
   id: string;
   name: string;
   created_at: string;
+  allowed_origins: string[];
 }
 
 interface Stats {
@@ -95,6 +96,9 @@ export default function DashboardPage() {
   const [creating, setCreating] = useState(false);
   const [revoking, setRevoking] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [editingOrigins, setEditingOrigins] = useState<string | null>(null);
+  const [originInput, setOriginInput] = useState("");
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -186,6 +190,45 @@ export default function DashboardPage() {
     }
   }
 
+  async function saveOrigin(keyId: string) {
+    let origin = originInput.trim();
+    if (!origin) return;
+    if (!origin.startsWith("https://") && !origin.startsWith("http://")) {
+      origin = "https://" + origin;
+    }
+    origin = origin.replace(/\/$/, "");
+    if (!origin.startsWith("https://")) {
+      setError("Only https:// origins are allowed");
+      return;
+    }
+    const key = keys.find((k) => k.id === keyId);
+    if (!key) return;
+    const res = await fetch(`/api/v1/keys/${keyId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ allowed_origins: [...key.allowed_origins, origin] }),
+    });
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}));
+      setError((json as { error?: string }).error ?? "Failed to save origin");
+      return;
+    }
+    setOriginInput("");
+    setEditingOrigins(null);
+    await loadData();
+  }
+
+  async function removeOrigin(keyId: string, origin: string) {
+    const key = keys.find((k) => k.id === keyId);
+    if (!key) return;
+    await fetch(`/api/v1/keys/${keyId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ allowed_origins: key.allowed_origins.filter((o) => o !== origin) }),
+    });
+    await loadData();
+  }
+
   async function redirectToBillingUrl(endpoint: string) {
     setError(null);
     try {
@@ -268,45 +311,86 @@ export default function DashboardPage() {
         ) : keys.length === 0 ? (
           <p className="text-sm text-muted-foreground">No API keys yet.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left text-muted-foreground">
-                  <th className="pb-2 font-medium">Name</th>
-                  <th className="pb-2 font-medium">Created</th>
-                  <th className="pb-2 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {keys.map((k) => (
-                  <tr key={k.id}>
-                    <td className="py-2 pr-4 font-mono text-xs">{k.name}</td>
-                    <td className="py-2 pr-4 text-muted-foreground">{fmt(k.created_at)}</td>
-                    <td className="py-2 text-right flex gap-2 justify-end">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => rotateKey(k.id, k.name)}
-                        disabled={revoking === k.id || billingBlocked}
+          <div className="divide-y rounded-md border">
+            {keys.map((k) => (
+              <div key={k.id} className="px-4 py-3">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <span className="font-mono text-sm font-medium">{k.name}</span>
+                    <span className="text-xs text-muted-foreground ml-3">{fmt(k.created_at)}</span>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => rotateKey(k.id, k.name)}
+                      disabled={revoking === k.id || billingBlocked}
+                    >
+                      <RefreshCw className="h-3 w-3 mr-1" />
+                      Rotate
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => revokeKey(k.id)}
+                      disabled={revoking === k.id}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      Revoke
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Allowed origins */}
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  <span className="text-xs text-muted-foreground">Allowed origins:</span>
+                  {k.allowed_origins.length === 0 && editingOrigins !== k.id && (
+                    <span className="text-xs text-muted-foreground italic">none</span>
+                  )}
+                  {k.allowed_origins.map((origin) => (
+                    <span
+                      key={origin}
+                      className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-mono text-xs"
+                    >
+                      {origin}
+                      <button
+                        onClick={() => removeOrigin(k.id, origin)}
+                        className="ml-0.5 text-muted-foreground hover:text-destructive transition-colors"
+                        aria-label={`Remove ${origin}`}
                       >
-                        <RefreshCw className="h-3 w-3 mr-1" />
-                        Rotate
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                  {editingOrigins === k.id ? (
+                    <div className="flex items-center gap-1">
+                      <Input
+                        value={originInput}
+                        onChange={(e) => setOriginInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") saveOrigin(k.id); if (e.key === "Escape") setEditingOrigins(null); }}
+                        placeholder="app.example.com"
+                        className="h-6 text-xs w-48 px-2"
+                        autoFocus
+                      />
+                      <Button size="sm" className="h-6 text-xs px-2" onClick={() => saveOrigin(k.id)}>
+                        Add
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => revokeKey(k.id)}
-                        disabled={revoking === k.id}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-3 w-3 mr-1" />
-                        Revoke
+                      <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => { setEditingOrigins(null); setOriginInput(""); }}>
+                        Cancel
                       </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => { setEditingOrigins(k.id); setOriginInput(""); }}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      + Add origin
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         )}
 

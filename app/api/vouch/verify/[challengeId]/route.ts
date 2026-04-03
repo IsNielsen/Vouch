@@ -5,15 +5,22 @@ import { recordVerifiedUsage } from "@/lib/billing";
 import { getRpConfig } from "@/lib/webauthn/rp";
 import { pqcSign } from "@/lib/webauthn/pqc-sign";
 import { verifyApiKey } from "@/lib/api-auth";
+import { withCors, CORS_PREFLIGHT_HEADERS } from "@/lib/cors";
+
+export async function OPTIONS() {
+  return new Response(null, { status: 204, headers: CORS_PREFLIGHT_HEADERS });
+}
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ challengeId: string }> }
 ) {
+  const requestOrigin = req.headers.get("origin");
   const apiAuth = await verifyApiKey(req);
   if (!apiAuth) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const cors = (res: Response) => withCors(res, requestOrigin, apiAuth.allowedOrigins);
 
   const { challengeId } = await params;
 
@@ -21,7 +28,7 @@ export async function POST(
   try {
     body = await req.json();
   } catch {
-    return Response.json({ error: "Invalid request body" }, { status: 400 });
+    return cors(Response.json({ error: "Invalid request body" }, { status: 400 }));
   }
 
   const admin = createAdminClient();
@@ -36,16 +43,16 @@ export async function POST(
     .single();
 
   if (!challenge) {
-    return Response.json({ error: "Challenge not found" }, { status: 404 });
+    return cors(Response.json({ error: "Challenge not found" }, { status: 404 }));
   }
 
   if ((challenge as { status: string }).status !== "pending" || new Date((challenge as { expires_at: string }).expires_at) < new Date()) {
-    return Response.json({ error: "Challenge expired or already used" }, { status: 410 });
+    return cors(Response.json({ error: "Challenge expired or already used" }, { status: 410 }));
   }
 
   const assertion = body.assertion as Record<string, unknown>;
   if (!assertion || typeof assertion.id !== "string") {
-    return Response.json({ error: "Missing assertion" }, { status: 400 });
+    return cors(Response.json({ error: "Missing assertion" }, { status: 400 }));
   }
 
   const { rpID, origin } = getRpConfig(req);
@@ -58,7 +65,7 @@ export async function POST(
 
   if (!passkey) {
     await markFailed("Passkey not registered");
-    return Response.json({ error: "Passkey not found" }, { status: 404 });
+    return cors(Response.json({ error: "Passkey not found" }, { status: 404 }));
   }
 
   let verification;
@@ -80,12 +87,12 @@ export async function POST(
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Verification error";
     await markFailed(msg);
-    return Response.json({ error: msg }, { status: 400 });
+    return cors(Response.json({ error: msg }, { status: 400 }));
   }
 
   if (!verification.verified) {
     await markFailed("WebAuthn assertion rejected");
-    return Response.json({ error: "Verification failed" }, { status: 400 });
+    return cors(Response.json({ error: "Verification failed" }, { status: 400 }));
   }
 
   await admin
@@ -108,7 +115,7 @@ export async function POST(
     ));
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "PQC signing error";
-    return Response.json({ error: msg }, { status: 500 });
+    return cors(Response.json({ error: msg }, { status: 500 }));
   }
 
   const ip =
@@ -133,7 +140,7 @@ export async function POST(
     .eq("id", challengeId);
 
   if (updateError) {
-    return Response.json({ error: updateError.message }, { status: 500 });
+    return cors(Response.json({ error: updateError.message }, { status: 500 }));
   }
 
   recordVerifiedUsage({ challengeId, userId: apiAuth.userId, verifiedAt })
@@ -176,7 +183,7 @@ export async function POST(
     }
   }
 
-  return Response.json({
+  return cors(Response.json({
     challenge_id: challengeId,
     verified: true,
     verified_at: verifiedAt,
@@ -185,5 +192,5 @@ export async function POST(
     pqc_public_key: pqcPublicKey,
     pqc_signature: pqcSignature,
     transaction_context: transactionContext,
-  });
+  }));
 }

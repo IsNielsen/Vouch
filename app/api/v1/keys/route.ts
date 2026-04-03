@@ -13,7 +13,7 @@ export async function GET() {
   const admin = createAdminClient();
   const { data: keys, error: fetchError } = await admin
     .from("api_keys")
-    .select("id, name, created_at")
+    .select("id, name, created_at, allowed_origins")
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
