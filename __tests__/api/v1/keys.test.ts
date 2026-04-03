@@ -14,7 +14,9 @@ vi.mock("@/lib/billing", () => ({
 }));
 
 const chain: Record<string, unknown> = {};
-chain.insert = vi.fn();
+chain.select = vi.fn().mockReturnValue(chain);
+chain.single = vi.fn();
+chain.insert = vi.fn().mockReturnValue(chain);
 
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({ from: vi.fn().mockReturnValue(chain) }),
@@ -33,7 +35,9 @@ function makeRequest(body?: unknown) {
 describe("POST /api/v1/keys", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (chain.insert as ReturnType<typeof vi.fn>).mockResolvedValue({ error: null });
+    (chain.insert as ReturnType<typeof vi.fn>).mockReturnValue(chain);
+    (chain.select as ReturnType<typeof vi.fn>).mockReturnValue(chain);
+    (chain.single as ReturnType<typeof vi.fn>).mockResolvedValue({ data: { id: "new-key-id" }, error: null });
     mockRequireBillingAccess.mockResolvedValue({ ok: true });
   });
 
@@ -64,7 +68,7 @@ describe("POST /api/v1/keys", () => {
 
   it("returns 500 when DB insert fails", async () => {
     mockGetClaims.mockResolvedValue({ data: { claims: { sub: "user-uuid" } }, error: null });
-    (chain.insert as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ error: { message: "DB error" } });
+    (chain.single as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: null, error: { message: "DB error" } });
     const res = await POST(makeRequest());
     expect(res.status).toBe(500);
     const body = await res.json();
