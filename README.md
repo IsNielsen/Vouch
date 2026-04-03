@@ -96,6 +96,20 @@ If you wish to just develop locally and not deploy to Vercel, [follow the steps 
 
 6. This template comes with the default shadcn/ui style initialized. If you instead want other ui.shadcn styles, delete `components.json` and [re-install shadcn/ui](https://ui.shadcn.com/docs/installation/next)
 
+### Stripe billing setup
+
+Billing routes return `Stripe billing is not configured` until these variables are set:
+
+```env
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_METERED_PRICE_ID=price_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_BILLING_METER_EVENT_NAME=vouch_verifications
+```
+
+`STRIPE_SECRET_KEY`, `STRIPE_METERED_PRICE_ID`, and `NEXT_PUBLIC_APP_URL` are required for checkout and portal flows. `STRIPE_WEBHOOK_SECRET` is required for the Stripe webhook endpoint, and `STRIPE_BILLING_METER_EVENT_NAME` is required only if you want to report metered usage events after successful verifications.
+
 > Check out [the docs for Local Development](https://supabase.com/docs/guides/getting-started/local-development) to also run Supabase locally.
 
 ## Feedback and issues
