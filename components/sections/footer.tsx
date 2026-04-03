@@ -5,7 +5,7 @@ export function Footer() {
     <footer className="bg-[#0a0a0f] border-t border-[#1a1a2e] py-16 px-6">
       <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-10">
         <div className="flex flex-col gap-3">
-          <span className="font-semibold text-xl text-[#f0f0fa]">Vouch</span>
+          <span className="font-semibold text-xl text-[#f0f0fa]">Verum</span>
           <p className="text-[#8888a8] text-sm leading-relaxed">
             Biometric fraud prevention API. Post-quantum signed receipts for every verification.
           </p>
@@ -40,7 +40,7 @@ export function Footer() {
         </div>
       </div>
       <div className="max-w-7xl mx-auto mt-10 pt-6 border-t border-[#1a1a2e] text-center text-xs text-[#444466]">
-        © 2026 Vouch. All rights reserved.
+        © 2026 Verum. All rights reserved.
       </div>
     </footer>
   );

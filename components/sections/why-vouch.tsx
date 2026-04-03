@@ -21,8 +21,8 @@ const features = [
     ),
   },
   {
-    title: "Zero PII on Vouch servers",
-    body: "Biometric verification happens in the device's secure enclave. No biometric data, no passwords, no credentials ever reach Vouch. Nothing to breach.",
+    title: "Zero PII on Verum servers",
+    body: "Biometric verification happens in the device's secure enclave. No biometric data, no passwords, no credentials ever reach Verum. Nothing to breach.",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5577ff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
@@ -37,7 +37,7 @@ export function WhyVouch() {
   return (
     <section className="bg-[#111118] py-20 md:py-28">
       <div className="max-w-7xl mx-auto px-4 md:px-8">
-        <SectionEyebrow label="Why Vouch" className="mb-4" />
+        <SectionEyebrow label="Why Verum" className="mb-4" />
 
         <h2 className="text-3xl md:text-4xl font-semibold tracking-tight text-[#f0f0fa] mb-3">
           Built for the attacks that are happening now

@@ -28,8 +28,8 @@ export function Navbar() {
       <div className="w-full max-w-7xl flex justify-between items-center px-4 md:px-8">
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2 text-[#f0f0fa] font-semibold text-lg">
-            <Image src={vouchLogo} alt="Vouch logo" width={28} height={28} className="invert" />
-            Vouch
+            <Image src={vouchLogo} alt="Verum logo" width={28} height={28} className="invert" />
+            Verum
           </Link>
           <div className="hidden md:flex items-center gap-5">
             <Link href="/demo" className="text-sm text-[#8888a8] hover:text-[#f0f0fa] transition-colors duration-150">

@@ -14,7 +14,7 @@ const steps = [
   {
     num: 3,
     title: "Call the verify endpoint",
-    body: "Send the credential assertion and challenge ID. Vouch verifies the WebAuthn response and signs the transaction context with ML-DSA.",
+    body: "Send the credential assertion and challenge ID. Verum verifies the WebAuthn response and signs the transaction context with ML-DSA.",
     code: null,
   },
   {

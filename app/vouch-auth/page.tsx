@@ -81,7 +81,7 @@ function VouchAuth({
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">Verify your identity</h1>
           <p className="text-sm text-muted-foreground">
-            Use your Vouch passkey to confirm this action.
+            Use your Verum passkey to confirm this action.
           </p>
         </div>
 
@@ -104,7 +104,7 @@ function VouchAuth({
         )}
 
         <p className="text-xs text-muted-foreground">
-          Secured by <span className="font-medium">Vouch</span>
+          Secured by <span className="font-medium">Verum</span>
         </p>
       </div>
     </div>

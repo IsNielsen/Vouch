@@ -519,7 +519,7 @@ export default function DemoPage() {
           {/* API Response */}
           <div className="bg-[#111118] rounded-[10px] border border-[#1a1a2e] p-5">
             <div className="flex items-center gap-2 mb-0.5">
-              <h2 className="font-semibold text-sm text-[#f0f0fa]">Vouch receipt</h2>
+              <h2 className="font-semibold text-sm text-[#f0f0fa]">Verum receipt</h2>
               {response !== null && (
                 <span className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-0.5 rounded-full bg-[#0a1a10] text-[#44cc88] border border-[#1a5533]">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#44cc88]" />

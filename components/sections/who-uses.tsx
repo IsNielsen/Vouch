@@ -10,7 +10,7 @@ export function WhoUses() {
   return (
     <section className="py-24 px-6 bg-muted/20">
       <div className="max-w-5xl mx-auto flex flex-col gap-12">
-        <h2 className="text-4xl font-bold text-center">Who uses Vouch?</h2>
+        <h2 className="text-4xl font-bold text-center">Who uses Verum?</h2>
         <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
           {industries.map(({ emoji, title, body }) => (
             <div

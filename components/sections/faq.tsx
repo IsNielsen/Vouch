@@ -1,19 +1,19 @@
 const faqs = [
   {
-    q: "What exactly does Vouch verify?",
-    a: "Vouch verifies that the person holding the registered device — and who can authenticate with its biometric sensor — approved a specific transaction context. You send the context (amount, payee, action), and Vouch returns a cryptographic receipt proving the user's biometric was presented for that exact context.",
+    q: "What exactly does Verum verify?",
+    a: "Verum verifies that the person holding the registered device — and who can authenticate with its biometric sensor — approved a specific transaction context. You send the context (amount, payee, action), and Verum returns a cryptographic receipt proving the user's biometric was presented for that exact context.",
   },
   {
     q: "How is this different from WebAuthn I already have?",
-    a: "Standard WebAuthn proves authentication. Vouch adds a post-quantum ML-DSA signature over the transaction context — tying the biometric event to a specific payload. That receipt is your dispute-proof evidence, independently verifiable without calling Vouch.",
+    a: "Standard WebAuthn proves authentication. Verum adds a post-quantum ML-DSA signature over the transaction context — tying the biometric event to a specific payload. That receipt is your dispute-proof evidence, independently verifiable without calling Verum.",
   },
   {
     q: "What is ML-DSA and why does it matter?",
     a: "ML-DSA (Module-Lattice-Based Digital Signature Algorithm) is a NIST-standardized post-quantum algorithm, finalized in FIPS 204. Unlike RSA or ECDSA, ML-DSA signatures remain secure against cryptanalytic attacks from quantum computers — ensuring your receipts hold up for years.",
   },
   {
-    q: "Is any biometric data stored by Vouch?",
-    a: "No. Biometric verification happens entirely within the hardware-backed secure enclave on the user's device. The biometric never leaves the device. Vouch only sees the cryptographic assertion produced by the enclave.",
+    q: "Is any biometric data stored by Verum?",
+    a: "No. Biometric verification happens entirely within the hardware-backed secure enclave on the user's device. The biometric never leaves the device. Verum only sees the cryptographic assertion produced by the enclave.",
   },
   {
     q: "How do I integrate?",

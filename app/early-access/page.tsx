@@ -11,7 +11,7 @@ export default function EarlyAccessPage() {
           <SectionEyebrow label="Early access" />
           <h1 className="text-4xl font-semibold tracking-tight text-[#f0f0fa]">Get early access</h1>
           <p className="text-[#8888a8] leading-relaxed">
-            Join the waitlist for the Vouch API. Tell us what you&apos;re building — we&apos;re onboarding fintech teams first.
+            Join the waitlist for the Verum API. Tell us what you&apos;re building — we&apos;re onboarding fintech teams first.
           </p>
           <WaitlistForm />
         </div>

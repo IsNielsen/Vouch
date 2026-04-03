@@ -20,7 +20,7 @@ export function Hero() {
             </h1>
 
             <p className="text-lg text-[#8888a8] leading-relaxed mb-8 max-w-xl">
-              Vouch gives fintech apps a single API call that returns a cryptographic,
+              Verum gives fintech apps a single API call that returns a cryptographic,
               device-bound verification receipt. Phishing-proof. Post-quantum signed.
             </p>
 

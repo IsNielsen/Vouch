@@ -17,7 +17,7 @@ export function CtaSplit() {
           </h2>
           <p className="text-white/80 text-lg leading-relaxed">
             When you&apos;re in the room with someone ready to sign, every
-            second of friction costs you. Vouch gets it done before the moment
+            second of friction costs you. Verum gets it done before the moment
             passes.
           </p>
           <Link

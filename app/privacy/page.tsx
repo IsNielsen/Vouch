@@ -1,8 +1,8 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Privacy Policy — Vouch",
-  description: "How Vouch collects, uses, and protects your data.",
+  title: "Privacy Policy — Verum",
+  description: "How Verum collects, uses, and protects your data.",
 };
 
 export default function PrivacyPage() {
@@ -30,7 +30,7 @@ export default function PrivacyPage() {
               1. Overview
             </h2>
             <p>
-              Vouch (&ldquo;we&rdquo;, &ldquo;us&rdquo;, or &ldquo;our&rdquo;)
+              Verum (&ldquo;we&rdquo;, &ldquo;us&rdquo;, or &ldquo;our&rdquo;)
               provides a fraud-prevention API that uses WebAuthn biometric
               authentication to issue cryptographic verification receipts. This
               policy explains what data we collect, why we collect it, and how
@@ -87,7 +87,7 @@ export default function PrivacyPage() {
                 "Authenticate you and manage your account",
                 "Generate and deliver verification receipts to your application",
                 "Calculate usage for billing purposes",
-                "Detect abuse or fraudulent use of the Vouch API",
+                "Detect abuse or fraudulent use of the Verum API",
                 "Send transactional emails (receipt copies, account notices)",
                 "Improve reliability and performance of the service",
               ].map((item) => (

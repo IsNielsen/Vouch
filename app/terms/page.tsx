@@ -1,8 +1,8 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Terms of Service — Vouch",
-  description: "Terms governing your use of the Vouch fraud-prevention API.",
+  title: "Terms of Service — Verum",
+  description: "Terms governing your use of the Verum fraud-prevention API.",
 };
 
 export default function TermsPage() {
@@ -30,7 +30,7 @@ export default function TermsPage() {
               1. Acceptance of terms
             </h2>
             <p>
-              By accessing or using the Vouch API, dashboard, or any related
+              By accessing or using the Verum API, dashboard, or any related
               services (collectively, the &ldquo;Service&rdquo;), you agree to
               be bound by these Terms of Service (&ldquo;Terms&rdquo;). If you
               are using the Service on behalf of an organisation, you represent
@@ -44,7 +44,7 @@ export default function TermsPage() {
               2. Description of service
             </h2>
             <p>
-              Vouch provides a fraud-prevention API that issues cryptographically
+              Verum provides a fraud-prevention API that issues cryptographically
               signed verification receipts using WebAuthn biometric
               authentication and post-quantum ML-DSA signatures. The Service
               allows integrating parties to challenge end-users and receive a
@@ -132,7 +132,7 @@ export default function TermsPage() {
               7. Intellectual property
             </h2>
             <p>
-              Vouch retains all rights, title, and interest in the Service,
+              Verum retains all rights, title, and interest in the Service,
               including all software, algorithms, trademarks, and documentation.
               These Terms grant you a limited, non-exclusive, non-transferable
               licence to access and use the Service solely as permitted herein.
@@ -168,7 +168,7 @@ export default function TermsPage() {
               9. Indemnification
             </h2>
             <p>
-              You agree to indemnify, defend, and hold harmless Vouch and its
+              You agree to indemnify, defend, and hold harmless Verum and its
               officers, directors, employees, and agents from any claim, damage,
               loss, or expense (including reasonable legal fees) arising from
               your use of the Service, your violation of these Terms, or your

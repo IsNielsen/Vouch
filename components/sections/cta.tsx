@@ -12,7 +12,7 @@ export function Cta() {
               Stop losing money to fraud you could have prevented.
             </h2>
             <p className="text-[#8888a8] leading-relaxed">
-              Every transaction that slips through costs you more than the fraud itself — chargebacks, dispute ops, regulatory scrutiny. Vouch closes the gap in an afternoon.
+              Every transaction that slips through costs you more than the fraud itself — chargebacks, dispute ops, regulatory scrutiny. Verum closes the gap in an afternoon.
             </p>
             <div className="flex flex-wrap gap-3">
               <Link
