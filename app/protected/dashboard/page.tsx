@@ -19,6 +19,15 @@ interface Stats {
   failed_reasons: { reason: string; count: number }[];
 }
 
+interface BillingState {
+  requires_billing_setup: boolean;
+  billing_status: string;
+  has_active_subscription: boolean;
+  customer_portal_available: boolean;
+  current_period_start: string | null;
+  current_period_end: string | null;
+}
+
 interface AuditEntry {
   id: string;
   created_at: string;
@@ -78,6 +87,7 @@ export default function DashboardPage() {
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
+  const [billing, setBilling] = useState<BillingState | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [keyName, setKeyName] = useState("My API Key");
@@ -88,17 +98,19 @@ export default function DashboardPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const [keysRes, statsRes, auditRes] = await Promise.all([
+    const [keysRes, statsRes, auditRes, billingRes] = await Promise.all([
       fetch("/api/v1/keys"),
       fetch("/api/v1/stats"),
       fetch("/api/v1/audit"),
+      fetch("/api/billing/status"),
     ]);
-    const [keysJson, statsJson, auditJson] = await Promise.all([
-      keysRes.json(), statsRes.json(), auditRes.json(),
+    const [keysJson, statsJson, auditJson, billingJson] = await Promise.all([
+      keysRes.json(), statsRes.json(), auditRes.json(), billingRes.json(),
     ]);
     setKeys(keysJson.keys ?? []);
     setStats(statsJson);
     setAudit(auditJson.entries ?? []);
+    setBilling(billingJson);
     setLoading(false);
   }, []);
 
@@ -148,9 +160,8 @@ export default function DashboardPage() {
     setRevoking(id);
     setError(null);
     setNewKey(null);
+    let newKeyId: string | null = null;
     try {
-      // revoke old, create new with same name
-      await fetch(`/api/v1/keys/${id}`, { method: "DELETE" });
       const res = await fetch("/api/v1/keys", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -158,6 +169,14 @@ export default function DashboardPage() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Failed to rotate");
+      newKeyId = json.id;
+      const revokeRes = await fetch(`/api/v1/keys/${id}`, { method: "DELETE" });
+      if (!revokeRes.ok) {
+        // Revoke the new key so we don't leave a ghost key behind.
+        if (newKeyId) await fetch(`/api/v1/keys/${newKeyId}`, { method: "DELETE" }).catch(() => {});
+        const revokeJson = await revokeRes.json().catch(() => ({}));
+        throw new Error(revokeJson.error ?? "Failed to revoke old key");
+      }
       setNewKey(json.key);
       await loadData();
     } catch (e: unknown) {
@@ -166,6 +185,20 @@ export default function DashboardPage() {
       setRevoking(null);
     }
   }
+
+  async function redirectToBillingUrl(endpoint: string) {
+    setError(null);
+    try {
+      const res = await fetch(endpoint, { method: "POST" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Failed");
+      window.location.href = json.url;
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Error");
+    }
+  }
+
+  const billingBlocked = billing?.requires_billing_setup ?? false;
 
   return (
     <div className="flex-1 w-full flex flex-col gap-8">
@@ -182,6 +215,49 @@ export default function DashboardPage() {
           {error}
         </p>
       )}
+
+      <section className="flex flex-col gap-4 border rounded-lg p-6">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="font-semibold text-lg">Billing</h2>
+            <p className="text-sm text-muted-foreground">
+              50 successful verifications included per UTC calendar month, then $0.08 each.
+            </p>
+          </div>
+          {billing?.customer_portal_available && !billingBlocked ? (
+            <Button variant="outline" onClick={() => redirectToBillingUrl("/api/billing/portal")}>
+              Manage Billing
+            </Button>
+          ) : (
+            <Button onClick={() => redirectToBillingUrl("/api/billing/checkout")}>
+              Set Up Billing
+            </Button>
+          )}
+        </div>
+
+        {loading || !billing ? (
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        ) : billingBlocked ? (
+          <div className="rounded-md border border-amber-500/40 bg-amber-500/5 px-4 py-3 text-sm">
+            API key creation is disabled until Stripe billing is set up for this account.
+          </div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-md border p-4">
+              <p className="text-xs text-muted-foreground">Status</p>
+              <p className="mt-1 font-medium capitalize">{billing.billing_status.replaceAll("_", " ")}</p>
+            </div>
+            <div className="rounded-md border p-4">
+              <p className="text-xs text-muted-foreground">Current Period Start</p>
+              <p className="mt-1 font-medium">{billing.current_period_start ? fmt(billing.current_period_start) : "—"}</p>
+            </div>
+            <div className="rounded-md border p-4">
+              <p className="text-xs text-muted-foreground">Current Period End</p>
+              <p className="mt-1 font-medium">{billing.current_period_end ? fmt(billing.current_period_end) : "—"}</p>
+            </div>
+          </div>
+        )}
+      </section>
 
       {/* ---- API Keys ---- */}
       <section className="flex flex-col gap-4 border rounded-lg p-6">
@@ -211,7 +287,7 @@ export default function DashboardPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => rotateKey(k.id, k.name)}
-                        disabled={revoking === k.id}
+                        disabled={revoking === k.id || billingBlocked}
                       >
                         <RefreshCw className="h-3 w-3 mr-1" />
                         Rotate
@@ -252,11 +328,17 @@ export default function DashboardPage() {
             value={keyName}
             onChange={(e) => setKeyName(e.target.value)}
             className="max-w-xs"
+            disabled={billingBlocked}
           />
-          <Button onClick={createKey} disabled={creating || !keyName.trim()}>
+          <Button onClick={createKey} disabled={creating || !keyName.trim() || billingBlocked}>
             {creating ? "Creating…" : "Create Key"}
           </Button>
         </div>
+        {billingBlocked && (
+          <p className="text-xs text-muted-foreground">
+            Set up Stripe billing above before creating or rotating API keys.
+          </p>
+        )}
       </section>
 
       {/* ---- This Month ---- */}

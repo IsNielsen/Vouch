@@ -1,6 +1,7 @@
 import { verifyAuthenticationResponse } from "@simplewebauthn/server";
 import { isoBase64URL } from "@simplewebauthn/server/helpers";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { recordVerifiedUsage } from "@/lib/billing";
 import { getRpConfig } from "@/lib/webauthn/rp";
 import { pqcSign } from "@/lib/webauthn/pqc-sign";
 import { verifyApiKey } from "@/lib/api-auth";
@@ -134,6 +135,9 @@ export async function POST(
   if (updateError) {
     return Response.json({ error: updateError.message }, { status: 500 });
   }
+
+  recordVerifiedUsage({ challengeId, userId: apiAuth.userId, verifiedAt })
+    .catch(error => console.error("Failed to record Stripe usage", error));
 
   const webhookUrl = (challenge as { webhook_url?: string | null }).webhook_url;
   if (webhookUrl) {

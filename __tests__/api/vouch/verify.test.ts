@@ -26,6 +26,9 @@ vi.mock("@/lib/api-auth", () => ({
 const { mockVerifyAuthenticationResponse } = vi.hoisted(() => ({
   mockVerifyAuthenticationResponse: vi.fn(),
 }));
+const { mockRecordVerifiedUsage } = vi.hoisted(() => ({
+  mockRecordVerifiedUsage: vi.fn(),
+}));
 vi.mock("@simplewebauthn/server", () => ({
   verifyAuthenticationResponse: mockVerifyAuthenticationResponse,
 }));
@@ -38,6 +41,10 @@ vi.mock("@simplewebauthn/server/helpers", () => ({
 
 vi.mock("@/lib/webauthn/rp", () => ({
   getRpConfig: () => ({ rpID: "localhost", origin: "http://localhost:3000" }),
+}));
+
+vi.mock("@/lib/billing", () => ({
+  recordVerifiedUsage: mockRecordVerifiedUsage,
 }));
 
 vi.mock("@noble/post-quantum/ml-dsa.js", () => ({
@@ -104,6 +111,7 @@ describe("POST /api/vouch/verify/[challengeId]", () => {
       verified: true,
       authenticationInfo: { newCounter: 1 },
     });
+    mockRecordVerifiedUsage.mockResolvedValue(undefined);
   });
 
   it("returns 401 when Bearer token is missing", async () => {
@@ -168,5 +176,25 @@ describe("POST /api/vouch/verify/[challengeId]", () => {
     expect(body.pqc_signature).toBeDefined();
     expect(body.pqc_public_key).toBeDefined();
     expect(body.transaction_context).toEqual({ amount: 100, currency: "USD" });
+    expect(mockRecordVerifiedUsage).toHaveBeenCalledWith({
+      challengeId: "challenge-uuid-123",
+      userId: "user-uuid",
+      verifiedAt: expect.any(String),
+    });
+  });
+
+  it("does not record usage when verification fails", async () => {
+    (chain.single as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({ data: mockChallenge, error: null })
+      .mockResolvedValueOnce({ data: mockPasskey, error: null });
+    mockVerifyAuthenticationResponse.mockResolvedValueOnce({
+      verified: false,
+      authenticationInfo: { newCounter: 1 },
+    });
+
+    const req = makeRequest({ assertion: mockAssertion });
+    const res = await POST(req, { params });
+    expect(res.status).toBe(400);
+    expect(mockRecordVerifiedUsage).not.toHaveBeenCalled();
   });
 });

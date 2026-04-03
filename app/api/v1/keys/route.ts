@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireBillingAccess } from "@/lib/billing";
 
 export async function GET() {
   const supabase = await createClient();
@@ -28,6 +29,11 @@ export async function POST(req: Request) {
   }
   const userId = data.claims.sub;
 
+  const billingAccess = await requireBillingAccess(userId);
+  if (!billingAccess.ok) {
+    return billingAccess.response;
+  }
+
   let name = "Default";
   try {
     const body = await req.json();
@@ -45,14 +51,14 @@ export async function POST(req: Request) {
   const keyHash = Buffer.from(hashBuffer).toString("hex");
 
   const admin = createAdminClient();
-  const { error: insertError } = await admin.from("api_keys").insert({
+  const { data: inserted, error: insertError } = await admin.from("api_keys").insert({
     user_id: userId,
     name,
     key_hash: keyHash,
-  });
+  }).select("id").single();
 
   if (insertError) return Response.json({ error: insertError.message }, { status: 500 });
 
   // Return raw key once — never stored
-  return Response.json({ key: rawKey, name });
+  return Response.json({ id: inserted.id, key: rawKey, name });
 }
