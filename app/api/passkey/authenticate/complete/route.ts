@@ -86,5 +86,5 @@ export async function POST(req: Request) {
     return Response.json({ error: linkError?.message ?? "Link generation failed" }, { status: 500 });
   }
 
-  return Response.json({ token_hash: linkData.properties.hashed_token }, { headers: corsHeaders });
+  return Response.json({ token_hash: linkData.properties.hashed_token });
 }
