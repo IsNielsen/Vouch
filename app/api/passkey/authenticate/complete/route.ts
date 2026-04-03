@@ -3,11 +3,17 @@ import { isoBase64URL } from "@simplewebauthn/server/helpers";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getRpConfig } from "@/lib/webauthn/rp";
+import { CORS_PREFLIGHT_HEADERS } from "@/lib/cors";
+
+export async function OPTIONS() {
+  return new Response(null, { status: 204, headers: CORS_PREFLIGHT_HEADERS });
+}
 
 export async function POST(req: Request) {
+  const corsHeaders = { "Access-Control-Allow-Origin": "*" };
   const cookieStore = await cookies();
   const challenge = cookieStore.get("webauthn_challenge")?.value;
-  if (!challenge) return Response.json({ error: "No challenge" }, { status: 400 });
+  if (!challenge) return Response.json({ error: "No challenge" }, { status: 400, headers: corsHeaders });
 
   cookieStore.delete("webauthn_challenge");
 
@@ -23,7 +29,7 @@ export async function POST(req: Request) {
     .single();
 
   if (pkError || !passkey) {
-    return Response.json({ error: "Passkey not found" }, { status: 404 });
+    return Response.json({ error: "Passkey not found" }, { status: 404, headers: corsHeaders });
   }
 
   let verification;
@@ -43,11 +49,11 @@ export async function POST(req: Request) {
     });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Verification error";
-    return Response.json({ error: msg }, { status: 400 });
+    return Response.json({ error: msg }, { status: 400, headers: corsHeaders });
   }
 
   if (!verification.verified) {
-    return Response.json({ error: "Verification failed" }, { status: 400 });
+    return Response.json({ error: "Verification failed" }, { status: 400, headers: corsHeaders });
   }
 
   // Update counter and last_used_at
@@ -61,7 +67,7 @@ export async function POST(req: Request) {
 
   // Accountless passkeys (signers) have no user_id — not an error, just no session to issue
   if (!passkey.user_id) {
-    return Response.json({ error: "No account linked to this passkey" }, { status: 404 });
+    return Response.json({ error: "No account linked to this passkey" }, { status: 404, headers: corsHeaders });
   }
 
   // Get the user's email to generate a magic link; derive one for anonymous users
@@ -78,8 +84,8 @@ export async function POST(req: Request) {
   });
 
   if (linkError || !linkData.properties?.hashed_token) {
-    return Response.json({ error: linkError?.message ?? "Link generation failed" }, { status: 500 });
+    return Response.json({ error: linkError?.message ?? "Link generation failed" }, { status: 500, headers: corsHeaders });
   }
 
-  return Response.json({ token_hash: linkData.properties.hashed_token });
+  return Response.json({ token_hash: linkData.properties.hashed_token }, { headers: corsHeaders });
 }

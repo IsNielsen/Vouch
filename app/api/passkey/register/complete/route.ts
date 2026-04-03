@@ -4,11 +4,17 @@ import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getRpConfig } from "@/lib/webauthn/rp";
+import { CORS_PREFLIGHT_HEADERS } from "@/lib/cors";
+
+export async function OPTIONS() {
+  return new Response(null, { status: 204, headers: CORS_PREFLIGHT_HEADERS });
+}
 
 export async function POST(req: Request) {
   const cookieStore = await cookies();
   const challenge = cookieStore.get("webauthn_challenge")?.value;
-  if (!challenge) return Response.json({ error: "No challenge" }, { status: 400 });
+  const corsHeaders = { "Access-Control-Allow-Origin": "*" };
+  if (!challenge) return Response.json({ error: "No challenge" }, { status: 400, headers: corsHeaders });
 
   cookieStore.delete("webauthn_challenge");
 
@@ -26,11 +32,11 @@ export async function POST(req: Request) {
     });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Verification error";
-    return Response.json({ error: msg }, { status: 400 });
+    return Response.json({ error: msg }, { status: 400, headers: corsHeaders });
   }
 
   if (!verification.verified || !verification.registrationInfo) {
-    return Response.json({ error: "Verification failed" }, { status: 400 });
+    return Response.json({ error: "Verification failed" }, { status: 400, headers: corsHeaders });
   }
 
   const { credential, aaguid } = verification.registrationInfo;
@@ -61,7 +67,7 @@ export async function POST(req: Request) {
   });
 
   if (pkError) {
-    return Response.json({ error: pkError.message }, { status: 500 });
+    return Response.json({ error: pkError.message }, { status: 500, headers: corsHeaders });
   }
 
   // Generate session token only for main app flow (userId present)
@@ -79,11 +85,11 @@ export async function POST(req: Request) {
     });
 
     if (linkError || !linkData.properties?.hashed_token) {
-      return Response.json({ error: linkError?.message ?? "Link generation failed" }, { status: 500 });
+      return Response.json({ error: linkError?.message ?? "Link generation failed" }, { status: 500, headers: corsHeaders });
     }
 
     tokenHash = linkData.properties.hashed_token;
   }
 
-  return Response.json(tokenHash ? { token_hash: tokenHash } : { success: true });
+  return Response.json(tokenHash ? { token_hash: tokenHash } : { success: true }, { headers: corsHeaders });
 }
