@@ -18,7 +18,7 @@ export async function POST(req: Request) {
   }
   const cors = (res: Response) => withCors(res, origin, apiAuth.allowedOrigins);
 
-  let body: { action?: unknown; context?: unknown; transaction_context?: unknown; user_id?: unknown; webhook_url?: unknown };
+  let body: { action?: unknown; context?: unknown; transaction_context?: unknown; user_id?: unknown; webhook_url?: unknown; };
   try {
     body = await req.json();
   } catch {
@@ -61,6 +61,7 @@ export async function POST(req: Request) {
     .insert({
       expires_at: expiresAt,
       webauthn_challenge: webauthnOptions.challenge,
+      webauthn_options: webauthnOptions,
       transaction_context: { action: body.action, context: txContext },
       user_id: typeof body.user_id === "string" ? body.user_id : null,
       api_key_hash: apiAuth.keyHash,

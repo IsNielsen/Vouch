@@ -54,6 +54,7 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/auth") &&
     !request.nextUrl.pathname.startsWith("/api") &&
     !request.nextUrl.pathname.startsWith("/sign") &&
+    !request.nextUrl.pathname.startsWith("/vouch-auth") &&
     !request.nextUrl.pathname.startsWith("/verify") &&
     !request.nextUrl.pathname.startsWith("/demo") &&
     !request.nextUrl.pathname.startsWith("/early-access") &&
