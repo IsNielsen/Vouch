@@ -27,6 +27,6 @@ export async function POST(req: Request) {
 
   return new Response(JSON.stringify(options), {
     status: 200,
-    headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+    headers: { "Content-Type": "application/json" },
   });
 }

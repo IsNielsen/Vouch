@@ -10,10 +10,9 @@ export async function OPTIONS() {
 }
 
 export async function POST(req: Request) {
-  const corsHeaders = { "Access-Control-Allow-Origin": "*" };
   const cookieStore = await cookies();
   const challenge = cookieStore.get("webauthn_challenge")?.value;
-  if (!challenge) return Response.json({ error: "No challenge" }, { status: 400, headers: corsHeaders });
+  if (!challenge) return Response.json({ error: "No challenge" }, { status: 400 });
 
   cookieStore.delete("webauthn_challenge");
 
@@ -29,7 +28,7 @@ export async function POST(req: Request) {
     .single();
 
   if (pkError || !passkey) {
-    return Response.json({ error: "Passkey not found" }, { status: 404, headers: corsHeaders });
+    return Response.json({ error: "Passkey not found" }, { status: 404 });
   }
 
   let verification;
@@ -49,11 +48,11 @@ export async function POST(req: Request) {
     });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Verification error";
-    return Response.json({ error: msg }, { status: 400, headers: corsHeaders });
+    return Response.json({ error: msg }, { status: 400 });
   }
 
   if (!verification.verified) {
-    return Response.json({ error: "Verification failed" }, { status: 400, headers: corsHeaders });
+    return Response.json({ error: "Verification failed" }, { status: 400 });
   }
 
   // Update counter and last_used_at
@@ -67,7 +66,7 @@ export async function POST(req: Request) {
 
   // Accountless passkeys (signers) have no user_id — not an error, just no session to issue
   if (!passkey.user_id) {
-    return Response.json({ error: "No account linked to this passkey" }, { status: 404, headers: corsHeaders });
+    return Response.json({ error: "No account linked to this passkey" }, { status: 404 });
   }
 
   // Get the user's email to generate a magic link; derive one for anonymous users
@@ -84,7 +83,7 @@ export async function POST(req: Request) {
   });
 
   if (linkError || !linkData.properties?.hashed_token) {
-    return Response.json({ error: linkError?.message ?? "Link generation failed" }, { status: 500, headers: corsHeaders });
+    return Response.json({ error: linkError?.message ?? "Link generation failed" }, { status: 500 });
   }
 
   return Response.json({ token_hash: linkData.properties.hashed_token }, { headers: corsHeaders });

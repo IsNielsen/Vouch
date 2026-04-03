@@ -13,8 +13,7 @@ export async function OPTIONS() {
 export async function POST(req: Request) {
   const cookieStore = await cookies();
   const challenge = cookieStore.get("webauthn_challenge")?.value;
-  const corsHeaders = { "Access-Control-Allow-Origin": "*" };
-  if (!challenge) return Response.json({ error: "No challenge" }, { status: 400, headers: corsHeaders });
+  if (!challenge) return Response.json({ error: "No challenge" }, { status: 400 });
 
   cookieStore.delete("webauthn_challenge");
 
@@ -32,11 +31,11 @@ export async function POST(req: Request) {
     });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Verification error";
-    return Response.json({ error: msg }, { status: 400, headers: corsHeaders });
+    return Response.json({ error: msg }, { status: 400 });
   }
 
   if (!verification.verified || !verification.registrationInfo) {
-    return Response.json({ error: "Verification failed" }, { status: 400, headers: corsHeaders });
+    return Response.json({ error: "Verification failed" }, { status: 400 });
   }
 
   const { credential, aaguid } = verification.registrationInfo;
@@ -67,7 +66,7 @@ export async function POST(req: Request) {
   });
 
   if (pkError) {
-    return Response.json({ error: pkError.message }, { status: 500, headers: corsHeaders });
+    return Response.json({ error: pkError.message }, { status: 500 });
   }
 
   // Generate session token only for main app flow (userId present)
@@ -85,11 +84,11 @@ export async function POST(req: Request) {
     });
 
     if (linkError || !linkData.properties?.hashed_token) {
-      return Response.json({ error: linkError?.message ?? "Link generation failed" }, { status: 500, headers: corsHeaders });
+      return Response.json({ error: linkError?.message ?? "Link generation failed" }, { status: 500 });
     }
 
     tokenHash = linkData.properties.hashed_token;
   }
 
-  return Response.json(tokenHash ? { token_hash: tokenHash } : { success: true }, { headers: corsHeaders });
+  return Response.json(tokenHash ? { token_hash: tokenHash } : { success: true });
 }
